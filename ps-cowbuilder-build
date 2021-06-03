@@ -1,0 +1,178 @@
+#!/usr/bin/env bash
+# extglob is needed for the call to tar in the binary build
+shopt -s extglob
+
+# Usage info
+show_help() {
+    cat << EOF
+    Usage: ${0##*/} [-a ARCHES]  [-b DEBIAN_BRANCH] [-t DEBIAN_TAG] [-s] [-u] [REPO]
+    This script builds a perfSONAR package out of a git REPO.
+    The build happens for the $DIST Debian distro (\$DIST should be set in your ENV).
+
+    Arguments understood:
+        -a: architecture(s) to build the package for (defaults to amd64)
+            multiple architectures can be given like "amd64 ppc64el"
+        -b: git debian branch to build from (default to master)
+            (upstream is read from gbp.conf)
+        -k: keep locally built packages (can be useful to solve dependencies)
+        -s: build only the source package
+        -t: git tag to build from (defaults no tag), overrides any -b arg
+            (upstream is read from gbp.conf)
+        -u: don't checkout nor update the local git repository
+            (useful for subsequent builds with no change to sources)
+
+    Some examples:
+    ./ps-cowbuilder-build -b 4.2.1 toolkit
+    ./ps-cowbuilder-build -t debian/stretch/4.2.1 toolkit
+    package=pscheduler-archiver-esmond ./ps-cowbuilder-build -b 4.3.0 pscheduler
+    for p in `ll pscheduler/source/ | awk '/pscheduler/ {print $9}' | grep -vE "pscheduler-(docs|rpm)" | sort -r`; do package=$p ./ps-cowbuilder-build -b 4.3.0 pscheduler; done
+
+    To rebuild everything in the local repo:
+    for p in jq python-icmperror python-jsonschema python-jsontemplate python-pyjq python-pyrsistent python-radix python-pscheduler `ls pscheduler/source | grep -E "^pscheduler" | grep -v "pscheduler-rpm"`; do package=$p ./ps-cowbuilder-build -b debian-python-3 pscheduler; done
+EOF
+}
+
+# Defaults
+# Repository to get source from
+REPO_LOC='/vagrant/'
+# Checked out source directory
+SRC_DIR='source'
+
+# Default values
+ARCHES='amd64'
+branch='master'
+unset tag
+unset source_only
+git_update=true
+keep_builds=false
+
+# Parsing options
+while getopts "a:b:t:ksu" OPT; do
+    case $OPT in
+        a) ARCHES=$OPTARG ;;
+        b) branch=$OPTARG ;;
+        k) keep_builds=true ;;
+        s) source_only=true ;;
+        t) tag=$OPTARG ;;
+        u) unset git_update ;;
+        '?')
+            show_help >&2
+            exit 1 ;;
+    esac
+done
+shift $((OPTIND-1))
+
+# Check if we still have an argument left
+if [ $# -gt 0 ]; then
+    REPO=$1
+fi
+if [ -z "$REPO" ]; then
+    show_help >&2
+    exit 1
+fi
+
+# Do we have a tag?
+if [ -z "$tag" ]; then
+    # We don't have a tag, we build a snapshot from $branch
+    export branch
+    DIST="${branch##*\/}"
+else
+    # We have a tag, say we will build from it
+    tagl="${tag#*\/}"
+    DIST="${tagl%%\/*}"
+    export tag
+fi
+
+# Do we want to clone the repo or do we have it already existing?
+if $git_update ; then
+    # Checkout source from local dev repo and merge upstream branch into ${DEBIAN_BRANCH}
+    rm -rf "${REPO}"
+    git clone "${REPO_LOC}${REPO}" "${REPO}/${SRC_DIR}"
+    cd "${REPO}/${SRC_DIR}"
+    if [ -n "$tag" ] ; then
+        branch=`git branch --contains "tags/${tag}" | awk '{print $2}'`
+    fi
+    git checkout "$branch"
+elif [[ -d "${REPO}/${SRC_DIR}" && ${branch} ]]; then
+    echo "I'm using the existing ${REPO} directory."
+    cd "${REPO}/${SRC_DIR}/.."
+    rm -f .git
+    mv "${SRC_DIR}/.git" .
+    rm -rf *
+    mkdir -p "${SRC_DIR}"
+    cd "${SRC_DIR}"
+    mv ../.git .
+    git checkout -B "${branch}"
+    git checkout -- *
+else
+    echo "You asked me to reuse the existing ${REPO} directory but it doesn't seem right."
+    exit 1
+fi
+
+# Announce what we'll do!
+echo -e "\nBuilding \033[1;32m${REPO}\033[0;37m from branch \033[1;36m${branch}\033[0;37m on \033[1;32m${ARCHES}\033[0;37m.\n"
+[ $tag ] && echo -e "\033[1;32mThis is a \033[1;33mrelease\033[1;32m, tag \033[1;33m${tag}\033[1;32m will be built !\033[0m\n"
+if $keep_builds ; then
+    echo "To solve dependencies, I will also use packages from /var/cache/pbuilder/$DIST/result if any."
+else
+    rm -rf /var/cache/pbuilder/result/$DIST/*
+fi
+
+cd ..
+# Build the source package
+${REPO_LOC}/distribution/debian/build-source-package.sh
+[ $? -eq 0 ] || exit 1
+
+PKG=`awk '/^Source:/ {print $2}' *.dsc`
+VERSION=`awk '/^Version:/ {print $2}' *.dsc`
+
+if [ ${source_only} ]; then
+    echo
+    echo -e "I have built the source package for \033[1;32m${PKG}\033[0m at \033[1;32m${VERSION}\033[0m and you asked me to stop.\n"
+    exit
+fi
+
+# We get $BUILD_ARCH, $DIST and $RELEASE from the content of the source package
+. ${REPO_LOC}/distribution/debian/check-release-repo.sh
+[ $? -eq 0 ] || exit 1
+
+# Loop on all ARCHES for the binary builds
+for ARCH in $ARCHES; do
+    # Check if we actually need to build
+    if [[ $ARCH != amd64 && "$BUILD_ARCH" == "all" ]]; then
+        echo -e "\n\033[1;32mI skip building binary independent package on $ARCH (we only need to build on amd64)\033[0m"
+        continue
+    fi
+
+    # Update cowbuilder chroot
+    echo -e "\n\033[1;32mUpdating cowbuilder environment base-${DIST}-${ARCH}-${RELEASE}.cow\033[0m"
+    # We do this through a direct call to pbuilder as cowbuilder doesn't seem to be able to move chroot inside a Docker container FS
+    sudo rm -rf /var/cache/pbuilder/temp-update.cow
+    sudo cp -a /var/cache/pbuilder/base-${DIST}-${ARCH}-${RELEASE}.cow /var/cache/pbuilder/temp-update.cow
+    sudo -E pbuilder update --buildplace /var/cache/pbuilder/temp-update.cow --no-targz
+    sudo rm -rf /var/cache/pbuilder/base-${DIST}-${ARCH}-${RELEASE}.cow
+    sudo mv /var/cache/pbuilder/temp-update.cow /var/cache/pbuilder/base-${DIST}-${ARCH}-${RELEASE}.cow
+
+    # Build binary package in cowbuilder chroot
+    echo -e "\n\033[1;32mBuilding binary package in base-${DIST}-${ARCH}-${RELEASE}.cow\033[0m"
+    sudo -E DIST=${DIST} ARCH=${ARCH} cowbuilder --build ./${PKG}*.dsc --basepath /var/cache/pbuilder/base-${DIST}-${ARCH}-${RELEASE}.cow --buildresult /var/cache/pbuilder/result/${DIST} --debbuildopts "-sa -b"
+done
+
+# TODO: How to capture the exit code of the build???
+if [ !$? ]; then
+    # We copy the resulting packages back to the main host
+    echo -e "\n\033[1;32mBuild succeeded, we copy the resulting packages to the shared volume /vagrant/result\033[0m\n"
+    for deb in /var/cache/pbuilder/result/${DIST}/*.deb ; do
+        echo ${deb##*/}
+        cp -af ${deb} /vagrant/result/
+    done
+    # And create a Packages file to serve as a local deb repo
+    echo -en "\nUpdating the APT local repository Packages content (in /vagrant/result)"
+    (cd /vagrant/result; apt-ftparchive packages . > Packages)
+    echo "."
+else
+    echo -e "\n\033[1;33mSomething went wrong, package not built!\033[0m\n"
+fi
+
+# Clean out the source builds
+rm -f ${PKG}_*

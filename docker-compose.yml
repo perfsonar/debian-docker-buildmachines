@@ -1,0 +1,26 @@
+### Required setup for the build images.
+# tmpfs and volumes are needed for systemd to work properly
+version: '3.8'
+services:
+  deb_build:
+    container_name: deb-build
+    privileged: true
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        OSimage: "$OSimage"
+        ARCH: "$ARCH"
+        REPO: "$REPO"
+        useproxy: "${useproxy:-no}"
+        proxy: "$proxy"
+    image: build_$OSimage_$ARCH_$REPO
+    tmpfs:
+      - /run
+      - /tmp
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - ../:/mnt/build
+    ports:
+       - "8443:443"
+
