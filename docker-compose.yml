@@ -1,5 +1,6 @@
 ### Required setup for the build images.
-# tmpfs and volumes are needed for systemd to work properly
+# tmpfs and /sys/fs/cgroup volumes are needed for systemd to work properly
+# /mnt/build is where the git repositories will be shared with the host
 version: '3.8'
 services:
   deb_build:
@@ -14,13 +15,11 @@ services:
         REPO: "$REPO"
         useproxy: "${useproxy:-no}"
         proxy: "$proxy"
-    image: build_$OSimage_$ARCH_$REPO
+    image: build.$REPO/$OSimage.$ARCH
     tmpfs:
       - /run
       - /tmp
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
       - ../:/mnt/build
-    ports:
-       - "8443:443"
 

@@ -5,13 +5,11 @@ shopt -s extglob
 # Usage info
 show_help() {
     cat << EOF
-    Usage: ${0##*/} [-a ARCHES]  [-b DEBIAN_BRANCH] [-t DEBIAN_TAG] [-s] [-u] [REPO]
+    Usage: ${0##*/} [-b DEBIAN_BRANCH] [-t DEBIAN_TAG] [-s] [-u] [REPO]
     This script builds a perfSONAR package out of a git REPO.
     The build happens for the $DIST Debian distro (\$DIST should be set in your ENV).
 
     Arguments understood:
-        -a: architecture(s) to build the package for (defaults to amd64)
-            multiple architectures can be given like "amd64 ppc64el"
         -b: git debian branch to build from (default to master)
             (upstream is read from gbp.conf)
         -k: keep locally built packages (can be useful to solve dependencies)
@@ -25,21 +23,23 @@ show_help() {
     ./ps-cowbuilder-build -b 4.2.1 toolkit
     ./ps-cowbuilder-build -t debian/stretch/4.2.1 toolkit
     package=pscheduler-archiver-esmond ./ps-cowbuilder-build -b 4.3.0 pscheduler
-    for p in `ll pscheduler/source/ | awk '/pscheduler/ {print $9}' | grep -vE "pscheduler-(docs|rpm)" | sort -r`; do package=$p ./ps-cowbuilder-build -b 4.3.0 pscheduler; done
-
-    To rebuild everything in the local repo:
-    for p in jq python-icmperror python-jsonschema python-jsontemplate python-pyjq python-pyrsistent python-radix python-pscheduler `ls pscheduler/source | grep -E "^pscheduler" | grep -v "pscheduler-rpm"`; do package=$p ./ps-cowbuilder-build -b debian-python-3 pscheduler; done
 EOF
+#    Other examples: to rebuild everything in the local repo:
+#    for p in `ls -al pscheduler/source/ | awk '/pscheduler/ {print $9}' | grep -vE "pscheduler-(docs|rpm)" | sort -r`; do package=$p ./ps-cowbuilder-build -b 4.3.0 pscheduler; done
+#    for p in jq python-icmperror python-jsonschema python-jsontemplate python-pyjq python-pyrsistent python-radix python-pscheduler `ls pscheduler/source | grep -E "^pscheduler" | grep -v "pscheduler-rpm"`; do package=$p ./ps-cowbuilder-build -b debian-python-3 pscheduler; done
 }
 
 # Defaults
 # Repository to get source from
-REPO_LOC='/vagrant/'
+REPO_LOC='/mnt/build/'
+BUILD_RESULTS=${REPO_LOC}'build_results'
+mkdir -p ${BUILD_RESULTS}
 # Checked out source directory
 SRC_DIR='source'
+cd
+mkdir ${SRC_DIR}
 
 # Default values
-ARCHES='amd64'
 branch='master'
 unset tag
 unset source_only
@@ -47,9 +47,8 @@ git_update=true
 keep_builds=false
 
 # Parsing options
-while getopts "a:b:t:ksu" OPT; do
+while getopts "b:t:ksu" OPT; do
     case $OPT in
-        a) ARCHES=$OPTARG ;;
         b) branch=$OPTARG ;;
         k) keep_builds=true ;;
         s) source_only=true ;;
@@ -112,6 +111,7 @@ fi
 # Announce what we'll do!
 echo -e "\nBuilding \033[1;32m${REPO}\033[0;37m from branch \033[1;36m${branch}\033[0;37m on \033[1;32m${ARCHES}\033[0;37m.\n"
 [ $tag ] && echo -e "\033[1;32mThis is a \033[1;33mrelease\033[1;32m, tag \033[1;33m${tag}\033[1;32m will be built !\033[0m\n"
+# TODO: keep local packages somewhere
 if $keep_builds ; then
     echo "To solve dependencies, I will also use packages from /var/cache/pbuilder/$DIST/result if any."
 else
@@ -136,39 +136,20 @@ fi
 . ${REPO_LOC}/distribution/debian/check-release-repo.sh
 [ $? -eq 0 ] || exit 1
 
-# Loop on all ARCHES for the binary builds
-for ARCH in $ARCHES; do
-    # Check if we actually need to build
-    if [[ $ARCH != amd64 && "$BUILD_ARCH" == "all" ]]; then
-        echo -e "\n\033[1;32mI skip building binary independent package on $ARCH (we only need to build on amd64)\033[0m"
-        continue
-    fi
-
-    # Update cowbuilder chroot
-    echo -e "\n\033[1;32mUpdating cowbuilder environment base-${DIST}-${ARCH}-${RELEASE}.cow\033[0m"
-    # We do this through a direct call to pbuilder as cowbuilder doesn't seem to be able to move chroot inside a Docker container FS
-    sudo rm -rf /var/cache/pbuilder/temp-update.cow
-    sudo cp -a /var/cache/pbuilder/base-${DIST}-${ARCH}-${RELEASE}.cow /var/cache/pbuilder/temp-update.cow
-    sudo -E pbuilder update --buildplace /var/cache/pbuilder/temp-update.cow --no-targz
-    sudo rm -rf /var/cache/pbuilder/base-${DIST}-${ARCH}-${RELEASE}.cow
-    sudo mv /var/cache/pbuilder/temp-update.cow /var/cache/pbuilder/base-${DIST}-${ARCH}-${RELEASE}.cow
-
-    # Build binary package in cowbuilder chroot
-    echo -e "\n\033[1;32mBuilding binary package in base-${DIST}-${ARCH}-${RELEASE}.cow\033[0m"
-    sudo -E DIST=${DIST} ARCH=${ARCH} cowbuilder --build ./${PKG}*.dsc --basepath /var/cache/pbuilder/base-${DIST}-${ARCH}-${RELEASE}.cow --buildresult /var/cache/pbuilder/result/${DIST} --debbuildopts "-sa -b"
-done
+# Build binary package without signing
+# TODO: for Jenkins, we'll want signing!
+cd "${SRC_DIR}"
+debuild -i -us -uc -sa -b
 
 # TODO: How to capture the exit code of the build???
 if [ !$? ]; then
     # We copy the resulting packages back to the main host
-    echo -e "\n\033[1;32mBuild succeeded, we copy the resulting packages to the shared volume /vagrant/result\033[0m\n"
-    for deb in /var/cache/pbuilder/result/${DIST}/*.deb ; do
-        echo ${deb##*/}
-        cp -af ${deb} /vagrant/result/
-    done
+    echo -e "\n\033[1;32mBuild succeeded, we copy the resulting packages to the shared volume ${BUILD_RESULTS}\033[0m\n"
+    cp -afv ../!(source) ${BUILD_RESULTS}
+
     # And create a Packages file to serve as a local deb repo
-    echo -en "\nUpdating the APT local repository Packages content (in /vagrant/result)"
-    (cd /vagrant/result; apt-ftparchive packages . > Packages)
+    echo -en "\nUpdating the APT local repository Packages content (in ${BUILD_RESULTS})"
+    (cd ${BUILD_RESULTS}; apt-ftparchive packages . > Packages)
     echo "."
 else
     echo -e "\n\033[1;33mSomething went wrong, package not built!\033[0m\n"
@@ -176,3 +157,4 @@ fi
 
 # Clean out the source builds
 rm -f ${PKG}_*
+

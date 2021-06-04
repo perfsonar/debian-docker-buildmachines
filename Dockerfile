@@ -6,8 +6,8 @@ ARG useproxy=no
 # TODO: move to pS provided base OS image
 # OS image to use as a base
 ARG OSimage=debian:stretch
-ARG ARCH=
-FROM ${ARCH}${OSimage} AS bbase
+ARG ARCH=amd64
+FROM --platform=${ARCH} ${OSimage} AS bbase
 
 # Some sane defaults
 ENV LC_ALL C
@@ -86,11 +86,14 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Copy build scripts
-COPY ./ps-cowbuilder-build /usr/bin/local/ps-cowbuilder-build
-RUN chmod +x /usr/bin/local/ps-cowbuilder-build
+COPY ./ps-builder /usr/local/bin/ps-builder
+RUN chmod +x /usr/local/bin/ps-builder
 
-# Shared volume for builds
+# Shared volume for builds and GPG signing
 VOLUME /mnt/build
+
+# Create build user
+RUN useradd -d /home/psbuild -G sudo -m -p public -s /bin/bash psbuild
 
 # Start systemd
 CMD ["/lib/systemd/systemd"]
