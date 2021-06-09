@@ -80,20 +80,19 @@ RUN if [ "$REPO" = "perfsonar-release" ] ; \
 RUN curl -o /etc/apt/sources.list.d/$REPO.list http://downloads.perfsonar.net/debian/$REPO.list
 
 # Some APT cleanup
-RUN apt-get update && \
-    apt-get autoremove -y && \
+RUN apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Copy build scripts
-COPY ./ps-builder /usr/local/bin/ps-builder
-RUN chmod +x /usr/local/bin/ps-builder
-
-# Shared volume for builds and GPG signing
+# Shared volume for builds
 VOLUME /mnt/build
 
 # Create build user
 RUN useradd -d /home/psbuild -G sudo -m -p public -s /bin/bash psbuild
+
+# Copy build scripts
+COPY ./ps-source-builder /usr/local/bin/ps-source-builder
+COPY ./ps-binary-builder /usr/local/bin/ps-binary-builder
 
 # Start systemd
 CMD ["/lib/systemd/systemd"]

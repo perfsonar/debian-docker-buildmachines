@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# extglob is needed for the call to tar in the binary build
+shopt -s extglob
+
+# Arg must be the git repo to build
+GITREPO=$1
+
+# Defaults
+# Repository to get source from
+REPO_LOC='/mnt/build/'
+BUILD_SRC=${REPO_LOC}'build_source'
+BUILD_RESULTS=${REPO_LOC}'build_results'
+SRC_DIR='source'
+# Go where the source package is
+cd ${BUILD_SRC}/${GITREPO}
+
+# Announce what we'll do!
+# We get $BUILD_ARCH, $DIST and $RELEASE from the content of the source package
+. ${REPO_LOC}/distribution/debian/check-release-repo.sh
+[ $? -eq 0 ] || exit 1
+echo
+
+# Build binary package without signing
+# TODO: for Jenkins, we'll want signing!
+cd "${SRC_DIR}"
+# Only run lintian on amd64
+if [ `uname -m` == "x86_64" ]; then
+    debuild -i -us -uc -sa -b
+else
+    debuild -i -us -uc -sa -b --lintian-opts --no-lintian
+fi
+
+# TODO: How to capture the exit code of the build???
+if [ $? -eq 0 ]; then
+    # We copy the resulting packages back to the main host
+    echo -e "\n\033[1;32mBuild succeeded, the resulting packages are in the shared volume ${BUILD_RESULTS}\033[0m\n"
+    cp -afv ../!(source) ${BUILD_RESULTS}
+
+    # And create a Packages file to serve as a local deb repo
+    echo -en "Updating the APT local repository Packages content (in ${BUILD_RESULTS})"
+    (cd ${BUILD_RESULTS}; apt-ftparchive packages . > Packages)
+    echo "."
+else
+    echo -e "\n\033[1;33mSomething went wrong, package not built!\033[0m\n"
+    exit 1
+fi
+
+# Clean out the source builds
+# TODO: what does need cleaning?  Might be better to clean at start

@@ -1,25 +1,70 @@
-### Required setup for the build images.
+version: '3.8'
+
+###
+# Some repeated defaults:
 # tmpfs and /sys/fs/cgroup volumes are needed for systemd to work properly
 # /mnt/build is where the git repositories will be shared with the host
-version: '3.8'
+###
+x-tmpfs:
+  &default-tmpfs
+  - /run
+  - /tmp
+
+x-volumes:
+  &default-volumes
+  - /sys/fs/cgroup:/sys/fs/cgroup:ro
+  - ../:/mnt/build
+
+###
+# The first service is only to build the required images
+# and to build the source package
+###
 services:
   deb_build:
-    container_name: deb-build
-    privileged: true
+    container_name: source-build
     build:
       context: .
-      dockerfile: Dockerfile
       args:
         OSimage: "$OSimage"
         ARCH: "$ARCH"
         REPO: "$REPO"
         useproxy: "${useproxy:-no}"
         proxy: "$proxy"
-    image: build.$REPO/$OSimage.$ARCH
-    tmpfs:
-      - /run
-      - /tmp
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-      - ../:/mnt/build
+    image: build.$REPO.$ARCH.$OSimage
+      # Might be useful to publish multiarch image on dockerHub
+      #image: docker.io/library/ntw0n/build.$REPO/$OSimage.$ARCH
+    privileged: true
+    tmpfs: *default-tmpfs
+    volumes: *default-volumes
+
+###
+# The binary build containers
+###
+  amd64_build:
+    container_name: amd64-build
+    image: build.$REPO.linux/amd64.$OSimage
+    privileged: true
+    tmpfs: *default-tmpfs
+    volumes: *default-volumes
+
+  arm64_build:
+    container_name: arm64-build
+    image: build.$REPO.linux/arm64.$OSimage
+    privileged: true
+    tmpfs: *default-tmpfs
+    volumes: *default-volumes
+
+  armv7_build:
+    container_name: armv7-build
+    image: build.$REPO.linux/arm/v7.$OSimage
+    privileged: true
+    tmpfs: *default-tmpfs
+    volumes: *default-volumes
+
+  386_build:
+    container_name: 386-build
+    image: build.$REPO.linux/386.$OSimage
+    privileged: true
+    tmpfs: *default-tmpfs
+    volumes: *default-volumes
 

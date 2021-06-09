@@ -32,12 +32,13 @@ EOF
 # Defaults
 # Repository to get source from
 REPO_LOC='/mnt/build/'
+BUILD_SRC=${REPO_LOC}'build_source'
 BUILD_RESULTS=${REPO_LOC}'build_results'
+mkdir -p ${BUILD_SRC}
 mkdir -p ${BUILD_RESULTS}
 # Checked out source directory
 SRC_DIR='source'
-cd
-mkdir ${SRC_DIR}
+cd ${BUILD_SRC}
 
 # Default values
 branch='master'
@@ -129,32 +130,6 @@ VERSION=`awk '/^Version:/ {print $2}' *.dsc`
 if [ ${source_only} ]; then
     echo
     echo -e "I have built the source package for \033[1;32m${PKG}\033[0m at \033[1;32m${VERSION}\033[0m and you asked me to stop.\n"
-    exit
+    exit 1
 fi
-
-# We get $BUILD_ARCH, $DIST and $RELEASE from the content of the source package
-. ${REPO_LOC}/distribution/debian/check-release-repo.sh
-[ $? -eq 0 ] || exit 1
-
-# Build binary package without signing
-# TODO: for Jenkins, we'll want signing!
-cd "${SRC_DIR}"
-debuild -i -us -uc -sa -b
-
-# TODO: How to capture the exit code of the build???
-if [ !$? ]; then
-    # We copy the resulting packages back to the main host
-    echo -e "\n\033[1;32mBuild succeeded, we copy the resulting packages to the shared volume ${BUILD_RESULTS}\033[0m\n"
-    cp -afv ../!(source) ${BUILD_RESULTS}
-
-    # And create a Packages file to serve as a local deb repo
-    echo -en "\nUpdating the APT local repository Packages content (in ${BUILD_RESULTS})"
-    (cd ${BUILD_RESULTS}; apt-ftparchive packages . > Packages)
-    echo "."
-else
-    echo -e "\n\033[1;33mSomething went wrong, package not built!\033[0m\n"
-fi
-
-# Clean out the source builds
-rm -f ${PKG}_*
 

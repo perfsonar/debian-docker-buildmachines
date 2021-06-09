@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+
+#######
+# build-in-docker [args_as_for_ps-bulder] [gitrepo]
+# This script will build docker images and launch a git repo build in a container
+# Requirements:
+# - Needs to be in a directory at the same level as the gitrepo to be built
+# - Functionnal docker buildx setup
+#
+# Args:
+# - all args are directly passed to the ps-builder script
+# - gitrepo: name of an already checked out git repository to build
+#
+# The OSimage and the pS repo used to build the package are coming from what
+# is defined in the debian/gbp.conf file, respectively in the builder and
+# debian-branch values.
+#######
+
+# Defaults
+declare -a ARCHES=("linux/amd64" "linux/arm/v7")
+declare -a ARCHES=("linux/amd64" "linux/ppc64le")
+# Valid values for ARCH:
+# linux/amd64
+# linux/arm64
+# linux/arm/v7
+# linux/arm/v5
+# linux/i386
+# linux/ppc64le
+# We will launch only the upper declared containers ARCH
+CONTAINERS=""
+for ARCH in ${ARCHES[@]}; do
+    LARCH=${ARCH#*\/}
+    CONTAINERS+=${LARCH/\/}"_build "
+done
+
+# Get the gitrepo to build
+GITREPO=`echo $@ | awk '{print $NF}'`
+
+# Which pS repo are we building for?
+# TODO: when a tag is given, we should build from staging
+REPO=`awk '/debian-branch / {gsub("\.[0-9]+$","",$3); print "perfsonar-"$3"-snapshot"}' ../$GITREPO/debian/gbp.conf`
+
+# Which OS are we building on?
+OSimage=`awk '/ DIST=/ {gsub("DIST=","",$3); print $3}' ../$GITREPO/debian/gbp.conf`
+case $OSimage in
+    bionic) OSimage=ubuntu:$OSimage ;;
+    buster) OSimage=debian:$OSimage ;;
+    focal) OSimage=ubuntu:$OSimage ;;
+    stretch) OSimage=debian:$OSimage ;;
+esac
+
+# Initialise
+LOGS_PREFIX="logs/binary_build"
+mkdir -p ${LOGS_PREFIX%%/*}
+rm -f ${LOGS_PREFIX}_*.log
+docker compose down
+export OSimage REPO useproxy
+
+# Loop on all ARCHES we want to build for to prepare images
+for ARCH in ${ARCHES[@]}; do
+    echo -e "\n\033[1;35m============\033[0;35m\nBuilding OS: $OSimage.$ARCH - pS repo: $REPO\n\033[1m============\033[0m\n"
+    # Build the image
+    ARCH=$ARCH docker buildx bake --load
+done
+
+# Launch all containers, with deb_build running on amd64
+# TODO: deb_build should be running on the main Docker host ARCH
+ARCH=linux/amd64 docker compose up -d deb_build $CONTAINERS
+# Build source package and feed all the parameters to ps-builder
+echo -e "\n\033[1m===== Building source package in source-build container =====\033[0m"
+docker compose exec --user psbuild deb_build /usr/local/bin/ps-source-builder $*
+# TODO: how to actually stop?
+[ $? -eq 0 ] || exit 1
+
+# Build binary package for all architectures
+for ARCH in ${ARCHES[@]}; do
+    LARCH=${ARCH#*\/}
+    LARCH=${LARCH/\/}
+    echo -e "\n===== Building \033[1mbinary package\033[0m on \033[1m$ARCH.$OSimage\033[0m in \033[1m$LARCH-build\033[0m container ====="
+    # TODO: can we run all builds in parallel?
+    docker compose exec --user psbuild ${LARCH}_build /usr/local/bin/ps-binary-builder $GITREPO
+done
+
+# Loop on all ARCHES to test install the new package
+# TODO
+
+echo -e "\nNow stopping containers."
+docker compose down
+
+### Debugging
+# docker compose up -d
+### Running again a binary build with same source package
+# ARCH=amd64 docker compose exec --user psbuild ${ARCH}_build /usr/local/bin/ps-binary-builder $GITREPO
+
