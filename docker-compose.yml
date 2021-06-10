@@ -5,6 +5,14 @@ version: '3.8'
 # tmpfs and /sys/fs/cgroup volumes are needed for systemd to work properly
 # /mnt/build is where the git repositories will be shared with the host
 ###
+x-build-args:
+  &default-build-args
+  OSimage: "$OSimage"
+  ARCH: "$ARCH"
+  REPO: "$REPO"
+  useproxy: "${useproxy:-no}"
+  proxy: "$proxy"
+
 x-tmpfs:
   &default-tmpfs
   - /run
@@ -24,12 +32,8 @@ services:
     container_name: source-build
     build:
       context: .
-      args:
-        OSimage: "$OSimage"
-        ARCH: "$ARCH"
-        REPO: "$REPO"
-        useproxy: "${useproxy:-no}"
-        proxy: "$proxy"
+      target: build-image
+      args: *default-build-args
     image: build.$REPO.$ARCH.$OSimage
       # Might be useful to publish multiarch image on dockerHub
       #image: docker.io/library/ntw0n/build.$REPO/$OSimage.$ARCH
@@ -64,6 +68,64 @@ services:
   386_build:
     container_name: 386-build
     image: build.$REPO.linux/386.$OSimage
+    privileged: true
+    tmpfs: *default-tmpfs
+    volumes: *default-volumes
+
+  ppc64le_build:
+    container_name: ppc64le-build
+    image: build.$REPO.linux/ppc64le.$OSimage
+    privileged: true
+    tmpfs: *default-tmpfs
+    volumes: *default-volumes
+
+###
+# The testing containers
+###
+  deb_test:
+    container_name: install-test
+    build:
+      context: .
+      target: test-image
+      args: *default-build-args
+    image: install.$REPO.$ARCH.$OSimage
+      # Might be useful to publish multiarch image on dockerHub
+      #image: docker.io/library/ntw0n/build.$REPO/$OSimage.$ARCH
+    privileged: true
+    tmpfs: *default-tmpfs
+    volumes: *default-volumes
+
+  amd64_test:
+    container_name: amd64-test
+    image: install.$REPO.linux/amd64.$OSimage
+    privileged: true
+    tmpfs: *default-tmpfs
+    volumes: *default-volumes
+
+  arm64_test:
+    container_name: arm64-test
+    image: install.$REPO.linux/arm64.$OSimage
+    privileged: true
+    tmpfs: *default-tmpfs
+    volumes: *default-volumes
+
+  armv7_test:
+    container_name: armv7-test
+    image: install.$REPO.linux/arm/v7.$OSimage
+    privileged: true
+    tmpfs: *default-tmpfs
+    volumes: *default-volumes
+
+  386_test:
+    container_name: 386-test
+    image: install.$REPO.linux/386.$OSimage
+    privileged: true
+    tmpfs: *default-tmpfs
+    volumes: *default-volumes
+
+  ppc64le_test:
+    container_name: ppc64le-test
+    image: install.$REPO.linux/ppc64le.$OSimage
     privileged: true
     tmpfs: *default-tmpfs
     volumes: *default-volumes

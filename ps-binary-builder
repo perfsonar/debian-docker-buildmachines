@@ -23,11 +23,12 @@ echo
 # Build binary package without signing
 # TODO: for Jenkins, we'll want signing!
 cd "${SRC_DIR}"
-# Only run lintian on amd64
 if [ `uname -m` == "x86_64" ]; then
+    # Only run lintian on amd64 (automatically called from debuild)
     debuild -i -us -uc -sa -b
 else
-    debuild -i -us -uc -sa -b --lintian-opts --no-lintian
+    # Calling directly dpkg-buildpackage on other ARCHES so we don't run Lintian that seems to have an issue when running under QEMU
+    dpkg-buildpackage -rfakeroot -us -uc -i -sa -b
 fi
 
 # TODO: How to capture the exit code of the build???
@@ -45,5 +46,3 @@ else
     exit 1
 fi
 
-# Clean out the source builds
-# TODO: what does need cleaning?  Might be better to clean at start

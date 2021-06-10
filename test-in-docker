@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+#######
+# test-in-docker [package] [repo] [osimage]
+# This script will test the installation of a locally build package
+#######
+
+# Defaults
+declare -a ARCHES=("linux/amd64" "linux/arm/v7")
+declare -a OSimages=("debian:stretch" "debian:buster" "ubuntu:xenial" "ubuntu:bionic")
+
+# Parse CLI args
+if [ -n "$1" ]; then
+    PKG=$1
+    if [ -n "$2" ]; then
+        # Set repo
+        declare -a REPO=$2
+        if [ -n "$3" ]; then
+            # Set OSimage
+            declare -a OSimages=("$3")
+        fi
+    fi
+else
+    echo "I need the name of package to test."
+    exit 1
+fi
+export REPO useproxy
+
+# Initialise
+LOGS_PREFIX="logs/binary_build"
+mkdir -p ${LOGS_PREFIX%%/*}
+rm -f ${LOGS_PREFIX}_*.log
+TEST_CONTAINERS=""
+for ARCH in ${ARCHES[@]}; do
+    LARCH=${ARCH#*\/}
+    TEST_CONTAINERS+=${LARCH/\/}"_test "
+done
+docker compose down
+
+# Start containers
+# TODO: deb_test should be running on the main Docker host ARCH and be used to run additional commands, if needed
+ARCH=linux/amd64 docker compose up -d deb_test $TEST_CONTAINERS
+
+# Loop on all ARCHES to test install the new package
+# Loop on all OS we want to test
+for OSimage in ${OSimages[@]}; do
+    LARCH=${ARCH#*\/}
+    LARCH=${LARCH/\/}
+    echo -e "\n===== Testing \033[1m$PKG\033[0m on \033[1m$ARCH.$OSimage\033[0m in \033[1m$LARCH-test\033[0m container =====\033[0m"
+    # TODO: can we run all tests in parallel?
+    docker compose exec ${LARCH}_test "apt-get update; apt-get -y install $PKG"
+done
+
+# Shuting down
+echo -e "\nNow stopping all containers."
+docker compose down
+

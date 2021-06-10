@@ -71,6 +71,11 @@ if [ -z "$REPO" ]; then
     exit 1
 fi
 
+# Keep previous builds?
+if !$keep_builds ; then
+    rm -f !(source)
+fi
+
 # Do we have a tag?
 if [ -z "$tag" ]; then
     # We don't have a tag, we build a snapshot from $branch

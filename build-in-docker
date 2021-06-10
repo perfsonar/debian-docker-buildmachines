@@ -17,8 +17,8 @@
 #######
 
 # Defaults
-declare -a ARCHES=("linux/amd64" "linux/arm/v7")
-declare -a ARCHES=("linux/amd64" "linux/ppc64le")
+declare -a ARCHES=("linux/amd64" "linux/arm64")
+#declare -a ARCHES=("linux/amd64" "linux/ppc64le")
 # Valid values for ARCH:
 # linux/amd64
 # linux/arm64
@@ -26,12 +26,6 @@ declare -a ARCHES=("linux/amd64" "linux/ppc64le")
 # linux/arm/v5
 # linux/i386
 # linux/ppc64le
-# We will launch only the upper declared containers ARCH
-CONTAINERS=""
-for ARCH in ${ARCHES[@]}; do
-    LARCH=${ARCH#*\/}
-    CONTAINERS+=${LARCH/\/}"_build "
-done
 
 # Get the gitrepo to build
 GITREPO=`echo $@ | awk '{print $NF}'`
@@ -48,19 +42,27 @@ case $OSimage in
     focal) OSimage=ubuntu:$OSimage ;;
     stretch) OSimage=debian:$OSimage ;;
 esac
+export OSimage REPO useproxy
 
 # Initialise
 LOGS_PREFIX="logs/binary_build"
 mkdir -p ${LOGS_PREFIX%%/*}
 rm -f ${LOGS_PREFIX}_*.log
+# We will launch only the upper declared containers ARCH
+CONTAINERS=""
+for ARCH in ${ARCHES[@]}; do
+    LARCH=${ARCH#*\/}
+    CONTAINERS+=${LARCH/\/}"_build "
+    TEST_CONTAINERS+=${LARCH/\/}"_test "
+done
 docker compose down
-export OSimage REPO useproxy
 
 # Loop on all ARCHES we want to build for to prepare images
 for ARCH in ${ARCHES[@]}; do
     echo -e "\n\033[1;35m============\033[0;35m\nBuilding OS: $OSimage.$ARCH - pS repo: $REPO\n\033[1m============\033[0m\n"
-    # Build the image
-    ARCH=$ARCH docker buildx bake --load
+    # Build the images, sequentially so that caching is effective
+    ARCH=$ARCH docker buildx bake --load deb_test
+    ARCH=$ARCH docker buildx bake --load deb_build
 done
 
 # Launch all containers, with deb_build running on amd64
@@ -81,10 +83,8 @@ for ARCH in ${ARCHES[@]}; do
     docker compose exec --user psbuild ${LARCH}_build /usr/local/bin/ps-binary-builder $GITREPO
 done
 
-# Loop on all ARCHES to test install the new package
-# TODO
-
-echo -e "\nNow stopping containers."
+# Shuting down
+echo -e "\nNow stopping all containers."
 docker compose down
 
 ### Debugging
