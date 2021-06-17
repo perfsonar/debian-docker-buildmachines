@@ -17,6 +17,13 @@ The resulting packages will be located in a new directory at the same level as t
 
 The build will use the information from the `debian/gbp.conf` file to know on which distro the package should be built and with which perfSONAR repository the dependencies should be solved.
 
+
+### Examples
+
+ * Building `pscheduler-archiver-rabbitmq` on debian:stretch using a local proxy:
+`export useproxy=yes proxy=172.17.0.1:3128 OSimage=debian:stretch REPO=perfsonar-minor-snapshot`
+`package=pscheduler-archiver-rabbitmq ./build-in-docker -b 4.4.0 pscheduler`
+
 ## Test packages
 To test the installation of a resulting package, run something like:
 

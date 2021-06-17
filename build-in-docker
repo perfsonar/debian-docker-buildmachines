@@ -1,20 +1,30 @@
 #!/usr/bin/env bash
 
-#######
-# build-in-docker [args_as_for_ps-bulder] [gitrepo]
-# This script will build docker images and launch a git repo build in a container
-# Requirements:
-# - Needs to be in a directory at the same level as the gitrepo to be built
-# - Functionnal docker buildx setup
-#
-# Args:
-# - all args are directly passed to the ps-builder script
-# - gitrepo: name of an already checked out git repository to build
-#
-# The OSimage and the pS repo used to build the package are coming from what
-# is defined in the debian/gbp.conf file, respectively in the builder and
-# debian-branch values.
-#######
+# Usage info
+show_help() {
+    cat << EOF
+    Usage: ${0##*/} -dB [args_as_for_ps-bulder] [gitrepo]
+    This script will build docker images and launch a git repo build in a container
+    Requirements:
+        - Needs to be in a directory at the same level as the gitrepo to be built
+        - Functionnal docker buildx setup
+
+    Arguments understood:
+        -d don't rebuild Docker images but use locally existing one
+        -B dont rebuild source package but use previously build one
+
+        - all other args are directly passed to the ps-source-builder script
+        - gitrepo: name of an already checked out git repository to build
+
+    The OSimage and the pS repo used to build the package are coming from what
+    is defined in the debian/gbp.conf file, respectively in the builder and
+    debian-branch values.
+    
+    Some examples:
+    ./build-in-docker -t debian/stretch/4.4.0-1.b1-1 toolkit
+    package=pscheduler-archiver-rabbitmq ./build-in-docker -b 4.4.0 pscheduler
+EOF
+}
 
 # Defaults
 declare -a ARCHES=("linux/amd64" "linux/arm64")
@@ -26,16 +36,42 @@ declare -a ARCHES=("linux/amd64" "linux/arm64")
 # linux/arm/v5
 # linux/i386
 # linux/ppc64le
+build_docker_images=true
+source_and_binary=true
+
+# Parsing options
+while getopts ":dBh" OPT; do
+    case $OPT in
+        d) build_docker_images=false ; shift ;;
+        B) source_and_binary=false ; shift ;;
+        h)
+            show_help >&2
+            exit 1 ;;
+    esac
+done
 
 # Get the gitrepo to build
 GITREPO=`echo $@ | awk '{print $NF}'`
+if [[ "$GITREPO" =~ ^(pscheduler|minor-packages)$ && -z "$package" ]]; then
+    echo "For pscheduler and minor-packages repo, the package variable needs to be set to the package to build!"
+    exit 1
+elif [ -z "$package" ]; then
+    package="."
+fi
+
+# Check if directory contains a Debian package to build
+if [ ! -f ../$GITREPO/$package/debian/gbp.conf ]; then
+    echo "This doesn't seem to be a package I can build."
+    echo "../$GITREPO/$package/debian/gbp.conf is not existing"
+    exit 1
+fi
 
 # Which pS repo are we building for?
 # TODO: when a tag is given, we should build from staging
-REPO=`awk '/debian-branch / {gsub("\.[0-9]+$","",$3); print "perfsonar-"$3"-snapshot"}' ../$GITREPO/debian/gbp.conf`
+REPO=`awk '/debian-branch / {gsub("\.[0-9]+$","",$3); print "perfsonar-"$3"-snapshot"}' ../$GITREPO/$package/debian/gbp.conf`
 
 # Which OS are we building on?
-OSimage=`awk '/ DIST=/ {gsub("DIST=","",$3); print $3}' ../$GITREPO/debian/gbp.conf`
+OSimage=`awk '/ DIST=/ {gsub("DIST=","",$3); print $3}' ../$GITREPO/$package/debian/gbp.conf`
 case $OSimage in
     bionic) OSimage=ubuntu:$OSimage ;;
     buster) OSimage=debian:$OSimage ;;
@@ -57,22 +93,31 @@ for ARCH in ${ARCHES[@]}; do
 done
 docker compose down
 
-# Loop on all ARCHES we want to build for to prepare images
-for ARCH in ${ARCHES[@]}; do
-    echo -e "\n\033[1;35m============\033[0;35m\nBuilding OS: $OSimage.$ARCH - pS repo: $REPO\n\033[1m============\033[0m\n"
-    # Build the images, sequentially so that caching is effective
-    ARCH=$ARCH docker buildx bake --load deb_test
-    ARCH=$ARCH docker buildx bake --load deb_build
-done
+if $build_docker_images ; then
+    # Loop on all ARCHES we want to build for to prepare images
+    for ARCH in ${ARCHES[@]}; do
+        echo -e "\n\033[1;35m============\033[0;35m\nBuilding OS: $OSimage.$ARCH - pS repo: $REPO\n\033[1m============\033[0m\n"
+        # Build the images, sequentially so that caching is effective
+        ARCH=$ARCH docker buildx bake --load deb_test
+        ARCH=$ARCH docker buildx bake --load deb_build
+    done
+else
+    echo -e "\n\033[1;33m -d : I'm not building Docker images but will use the ones already existing in the local registry.\033[0m\n"
+fi
 
 # Launch all containers, with deb_build running on amd64
 # TODO: deb_build should be running on the main Docker host ARCH
 ARCH=linux/amd64 docker compose up -d deb_build $CONTAINERS
-# Build source package and feed all the parameters to ps-builder
-echo -e "\n\033[1m===== Building source package in source-build container =====\033[0m"
-docker compose exec --user psbuild deb_build /usr/local/bin/ps-source-builder $*
-# TODO: how to actually stop?
-[ $? -eq 0 ] || exit 1
+
+if ${source_and_binary} ; then
+    # Build source package and feed all the parameters to ps-builder
+    echo -e "\n\033[1m===== Building source package in source-build container =====\033[0m"
+    docker compose exec --user psbuild -e package=$package deb_build /usr/local/bin/ps-source-builder $*
+    # TODO: how to actually stop?
+    [ $? -eq 0 ] || exit 1
+else
+    echo -e "\n\033[1;33m -B : I'm not building the source package, but will use the one already existing in the local ../build_source directory.\033[0m\n"
+fi
 
 # Build binary package for all architectures
 for ARCH in ${ARCHES[@]}; do
@@ -80,7 +125,7 @@ for ARCH in ${ARCHES[@]}; do
     LARCH=${LARCH/\/}
     echo -e "\n===== Building \033[1mbinary package\033[0m on \033[1m$ARCH.$OSimage\033[0m in \033[1m$LARCH-build\033[0m container ====="
     # TODO: can we run all builds in parallel?
-    docker compose exec --user psbuild ${LARCH}_build /usr/local/bin/ps-binary-builder $GITREPO
+    docker compose exec --user psbuild -e package=$package ${LARCH}_build /usr/local/bin/ps-binary-builder $GITREPO
 done
 
 # Shuting down

@@ -11,6 +11,7 @@ REPO_LOC='/mnt/build/'
 BUILD_SRC=${REPO_LOC}'build_source'
 BUILD_RESULTS=${REPO_LOC}'build_results'
 SRC_DIR='source'
+BUILD_DIR='build'
 # Go where the source package is
 cd ${BUILD_SRC}/${GITREPO}
 
@@ -18,27 +19,33 @@ cd ${BUILD_SRC}/${GITREPO}
 # We get $BUILD_ARCH, $DIST and $RELEASE from the content of the source package
 . ${REPO_LOC}/distribution/debian/check-release-repo.sh
 [ $? -eq 0 ] || exit 1
-echo
 
+# Extract source package
+mkdir -p $BUILD_DIR
+tar -x -C $BUILD_DIR -f *.orig.*
+tar -x -C $BUILD_DIR -f *.debian.*
+cd $BUILD_DIR
 # Build binary package without signing
 # TODO: for Jenkins, we'll want signing!
-cd "${SRC_DIR}"
 if [ `uname -m` == "x86_64" ]; then
     # Only run lintian on amd64 (automatically called from debuild)
     debuild -i -us -uc -sa -b
 else
+    if [ "$BUILD_ARCH" == "all" ]; then
+        echo "I only build binary independent package on amd64."
+        exit 0
+    fi
     # Calling directly dpkg-buildpackage on other ARCHES so we don't run Lintian that seems to have an issue when running under QEMU
     dpkg-buildpackage -rfakeroot -us -uc -i -sa -b
 fi
 
-# TODO: How to capture the exit code of the build???
 if [ $? -eq 0 ]; then
     # We copy the resulting packages back to the main host
-    echo -e "\n\033[1;32mBuild succeeded, the resulting packages are in the shared volume ${BUILD_RESULTS}\033[0m\n"
-    cp -afv ../!(source) ${BUILD_RESULTS}
+    echo -e "\n\033[1;32mBuild succeeded, the resulting packages will be copied the shared volume ${BUILD_RESULTS}\033[0m\n"
+    cp -afv ../!(${SRC_DIR}|${BUILD_DIR}) ${BUILD_RESULTS}
 
     # And create a Packages file to serve as a local deb repo
-    echo -en "Updating the APT local repository Packages content (in ${BUILD_RESULTS})"
+    echo -en "\nUpdating the APT local repository Packages content (in ${BUILD_RESULTS})"
     (cd ${BUILD_RESULTS}; apt-ftparchive packages . > Packages)
     echo "."
 else
