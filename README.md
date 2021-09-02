@@ -27,6 +27,8 @@ The build will use the information from the `debian/gbp.conf` file to know on wh
 ## Test packages
 To test the installation of a resulting package, run something like:
 
+./test-in-docker package.deb
+
 This project provides ways of testing installation of perfSONAR DEB package-based bundles on Debian-based systems using Docker containers.
 
 Fully Supported:

@@ -7,7 +7,7 @@
 
 # Defaults
 declare -a ARCHES=("linux/amd64" "linux/arm/v7")
-declare -a OSimages=("debian:stretch" "debian:buster" "ubuntu:xenial" "ubuntu:bionic")
+declare -a OSimages=("debian:stretch" "debian:buster" "ubuntu:xenial" "ubuntu:bionic" "ubuntu:focal")
 
 # Parse CLI args
 if [ -n "$1" ]; then
@@ -49,6 +49,7 @@ for OSimage in ${OSimages[@]}; do
     echo -e "\n===== Testing \033[1m$PKG\033[0m on \033[1m$ARCH.$OSimage\033[0m in \033[1m$LARCH-test\033[0m container =====\033[0m"
     # TODO: can we run all tests in parallel?
     docker compose exec ${LARCH}_test "apt-get update; apt-get -y install $PKG"
+    # Should we run autopkgtest instead? Or after installation if they exist?
 done
 
 # Shuting down

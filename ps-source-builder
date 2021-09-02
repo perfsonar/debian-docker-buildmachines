@@ -73,7 +73,7 @@ fi
 
 # Keep previous builds?
 if ! $keep_builds ; then
-    rm -f $REPO/!(source)
+    rm -rf $REPO/!(source)
 fi
 
 # Do we have a tag?

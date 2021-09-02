@@ -25,6 +25,18 @@ mkdir -p $BUILD_DIR
 tar -x -C $BUILD_DIR -f *.orig.*
 tar -x -C $BUILD_DIR -f *.debian.*
 cd $BUILD_DIR
+
+# If we were given an second argument, we run it as a command, cheap debugging
+if [ "$2" ]; then
+    echo -e "\n\033[1;33mWe've been given a second argument, we'll run it instead of the build command.\033[0m\n"
+    $2
+    exit
+fi
+
+# Install build dependencies
+mk-build-deps --install --tool 'apt-get --yes --no-install-recommends -o Debug::pkgProblemResolver=yes' --remove
+# Alternative: `apt build-dep ./`
+
 # Build binary package without signing
 # TODO: for Jenkins, we'll want signing!
 if [ `uname -m` == "x86_64" ]; then

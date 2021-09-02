@@ -10,8 +10,8 @@ ARG ARCH=linux/amd64
 FROM --platform=${ARCH} ${OSimage} AS pre-base
 
 # Some sane defaults
-ENV LC_ALL C
-ENV DEBIAN_FRONTEND noninteractive
+ENV LC_ALL=C
+ENV DEBIAN_FRONTEND=noninteractive
 
 # If you want to use a proxy to speed up download both at build time and test time (docker run)
 # Trick built on top of https://medium.com/@tonistiigi/advanced-multi-stage-build-patterns-6f741b852fae
@@ -81,16 +81,18 @@ VOLUME /mnt/build
 ### Repositories configuration and build tools setup
 FROM ps-base-image AS build-image
 # Contrib and backport repositories are also needed for up to date build tools
+RUN awk '/^deb .* (stretch|buster) main/ { print $1" "$2" "$3"-backports main contrib" }' /etc/apt/sources.list > /tmp/docker-tmp
 RUN sed -i 's| main$| main contrib|' /etc/apt/sources.list
-RUN echo 'deb http://deb.debian.org/debian stretch-backports main contrib' >> /etc/apt/sources.list
+RUN cat /tmp/docker-tmp >> /etc/apt/sources.list && rm /tmp/docker-tmp
 
 # Building and repository mgmt tools needed for the build
 #TODO: Need to change stretch-backport to something that will also work with other distros
 RUN apt-get update && apt-get install -y \
         git-buildpackage \
-        vim && \
-    apt-get -t stretch-backports install -y \
-        lintian
+        lintian vim
+#        vim && \
+#    apt-get -t buster-backports install -y \
+#        lintian
 
 # Create build user
 RUN useradd -d /home/psbuild -G sudo -m -p public -s /bin/bash psbuild

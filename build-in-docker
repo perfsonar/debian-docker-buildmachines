@@ -3,7 +3,7 @@
 # Usage info
 show_help() {
     cat << EOF
-    Usage: ${0##*/} -dB [args_as_for_ps-bulder] [gitrepo]
+    Usage: ${0##*/} -dBD [args_as_for_ps-source-builder] [gitrepo]
     This script will build docker images and launch a git repo build in a container
     Requirements:
         - Needs to be in a directory at the same level as the gitrepo to be built
@@ -11,9 +11,11 @@ show_help() {
 
     Arguments understood:
         -d don't rebuild Docker images but use locally existing one
-        -B dont rebuild source package but use previously build one
+        -B don't rebuild source package but use previously build one
+        -D debug build, will get you into a shell instead of doing the build
 
         - all other args are directly passed to the ps-source-builder script
+          but they need to be separated with a blank space ' '
         - gitrepo: name of an already checked out git repository to build
 
     The OSimage and the pS repo used to build the package are coming from what
@@ -27,7 +29,8 @@ EOF
 }
 
 # Defaults
-declare -a ARCHES=("linux/amd64" "linux/arm64")
+declare -a ARCHES=("linux/amd64")
+#declare -a ARCHES=("linux/amd64" "linux/arm64")
 #declare -a ARCHES=("linux/amd64" "linux/ppc64le")
 # Valid values for ARCH:
 # linux/amd64
@@ -38,17 +41,21 @@ declare -a ARCHES=("linux/amd64" "linux/arm64")
 # linux/ppc64le
 build_docker_images=true
 source_and_binary=true
+need_shift=false
 
 # Parsing options
-while getopts ":dBh" OPT; do
+while getopts "dBDhb:t:ksu" OPT; do
     case $OPT in
-        d) build_docker_images=false ; shift ;;
-        B) source_and_binary=false ; shift ;;
+        d) build_docker_images=false ; need_shift=true ;;
+        B) source_and_binary=false ; need_shift=true ;;
+        D) debug_build="bash" ; need_shift=true ;;
         h)
             show_help >&2
             exit 1 ;;
+# The other options will get passed to ps-source-builder
     esac
 done
+[ $need_shift ] && shift
 
 # Get the gitrepo to build
 GITREPO=`echo $@ | awk '{print $NF}'`
@@ -60,18 +67,19 @@ elif [ -z "$package" ]; then
 fi
 
 # Check if directory contains a Debian package to build
-if [ ! -f ../$GITREPO/$package/debian/gbp.conf ]; then
+GBPCONF=`find ../$GITREPO/$package -path */debian/gbp.conf`
+if [ $? -ne 0 ]; then
     echo "This doesn't seem to be a package I can build."
-    echo "../$GITREPO/$package/debian/gbp.conf is not existing"
+    echo "There is no debian/gbp.conf file in ../$GITREPO/$package"
     exit 1
 fi
 
 # Which pS repo are we building for?
 # TODO: when a tag is given, we should build from staging
-REPO=`awk '/debian-branch / {gsub("\.[0-9]+$","",$3); print "perfsonar-"$3"-snapshot"}' ../$GITREPO/$package/debian/gbp.conf`
+REPO=`awk '/debian-branch / {gsub("\.[0-9]+$","",$3); print "perfsonar-"$3"-snapshot"}' $GBPCONF`
 
 # Which OS are we building on?
-OSimage=`awk '/ DIST=/ {gsub("DIST=","",$3); print $3}' ../$GITREPO/$package/debian/gbp.conf`
+OSimage=`awk '/ DIST=/ {gsub("DIST=","",$3); print $3}' $GBPCONF`
 case $OSimage in
     bionic) OSimage=ubuntu:$OSimage ;;
     buster) OSimage=debian:$OSimage ;;
@@ -91,7 +99,7 @@ for ARCH in ${ARCHES[@]}; do
     CONTAINERS+=${LARCH/\/}"_build "
     TEST_CONTAINERS+=${LARCH/\/}"_test "
 done
-docker compose down
+ARCH=linux/amd64 docker compose down
 
 if $build_docker_images ; then
     # Loop on all ARCHES we want to build for to prepare images
@@ -112,7 +120,7 @@ ARCH=linux/amd64 docker compose up -d deb_build $CONTAINERS
 if ${source_and_binary} ; then
     # Build source package and feed all the parameters to ps-builder
     echo -e "\n\033[1m===== Building source package in source-build container =====\033[0m"
-    docker compose exec --user psbuild -e package=$package deb_build /usr/local/bin/ps-source-builder $*
+    ARCH=linux/amd64 docker compose exec --user psbuild -e package=$package deb_build /usr/local/bin/ps-source-builder $*
     # TODO: how to actually stop?
     [ $? -eq 0 ] || exit 1
 else
@@ -124,16 +132,17 @@ for ARCH in ${ARCHES[@]}; do
     LARCH=${ARCH#*\/}
     LARCH=${LARCH/\/}
     echo -e "\n===== Building \033[1mbinary package\033[0m on \033[1m$ARCH.$OSimage\033[0m in \033[1m$LARCH-build\033[0m container ====="
+    [ -n "$debug_build" ] && echo -e "\033[1;33m -D : We will run a debug binary build, i.e. call $debug_build.\033[0m\n"
     # TODO: can we run all builds in parallel?
-    docker compose exec --user psbuild -e package=$package ${LARCH}_build /usr/local/bin/ps-binary-builder $GITREPO
+    ARCH=$ARCH docker compose exec -e package=$package ${LARCH}_build /usr/local/bin/ps-binary-builder $GITREPO $debug_build
 done
 
 # Shuting down
-echo -e "\nNow stopping all containers."
-docker compose down
+#echo -e "\nNow stopping all containers."
+#ARCH=linux/amd64 docker compose down
 
 ### Debugging
-# docker compose up -d
+# ARCH=linux/amd64 OSimage=debian:stretch REPO=perfsonar-4.4-snapshot docker compose up -d deb_build amd64_build
 ### Running again a binary build with same source package
-# ARCH=amd64 docker compose exec --user psbuild ${ARCH}_build /usr/local/bin/ps-binary-builder $GITREPO
+# ARCH=amd64 OSimage=debian:stretch REPO=perfsonar-4.4-snapshot docker compose exec --user psbuild amd64_build /usr/local/bin/ps-binary-builder $GITREPO
 
