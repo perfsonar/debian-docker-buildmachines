@@ -11,7 +11,7 @@ REPO_LOC='/mnt/build/'
 BUILD_SRC=${REPO_LOC}'build_source'
 BUILD_RESULTS=${REPO_LOC}'build_results'
 SRC_DIR='source'
-BUILD_DIR='build'
+BUILD_DIR='binary'
 # Go where the source package is
 cd ${BUILD_SRC}/${GITREPO}
 
@@ -22,7 +22,7 @@ cd ${BUILD_SRC}/${GITREPO}
 
 # Extract source package
 mkdir -p $BUILD_DIR
-tar -x -C $BUILD_DIR -f *.orig.*
+tar -x -C $BUILD_DIR --strip-components 1 -f *.orig.*
 tar -x -C $BUILD_DIR -f *.debian.*
 cd $BUILD_DIR
 

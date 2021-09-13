@@ -2,7 +2,7 @@
 
 ### Globally scoped ARG, defined here to be available to use in FROM statements
 # Do we want to use a proxy?
-ARG useproxy=no
+ARG useproxy=without
 # TODO: move to pS provided base OS image
 # OS image to use as a base
 ARG OSimage=debian:stretch
@@ -15,20 +15,20 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # If you want to use a proxy to speed up download both at build time and test time (docker run)
 # Trick built on top of https://medium.com/@tonistiigi/advanced-multi-stage-build-patterns-6f741b852fae
-FROM pre-base AS base-proxy-yes
+FROM pre-base AS base-with-proxy
 ARG proxy
 ENV http_proxy=http://${proxy}
 ENV https_proxy=https://${proxy}
 ENV no_proxy=localhost,127.0.0.1
 
-FROM pre-base AS base-proxy-no
+FROM pre-base AS base-without-proxy
 ENV http_proxy=
 ENV https_proxy=
 ENV no_proxy=
 
 ### Systemd related setup
 # TODO: should be moved to dedicated image
-FROM base-proxy-${useproxy} AS ps-base-image
+FROM base-${useproxy}-proxy AS ps-base-image
 RUN echo "This Docker image is using proxy: ${https_proxy:-none}"
 RUN apt-get update && apt-get install -y \
         apt-utils \

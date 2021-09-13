@@ -7,6 +7,7 @@ show_help() {
     This script will build docker images and launch a git repo build in a container
     Requirements:
         - Needs to be in a directory at the same level as the gitrepo to be built
+        - The source branch to build from need to be checked out
         - Functionnal docker buildx setup
 
     Arguments understood:
@@ -29,8 +30,8 @@ EOF
 }
 
 # Defaults
-declare -a ARCHES=("linux/amd64")
-#declare -a ARCHES=("linux/amd64" "linux/arm64")
+#declare -a ARCHES=("linux/amd64")
+declare -a ARCHES=("linux/amd64" "linux/arm64")
 #declare -a ARCHES=("linux/amd64" "linux/ppc64le")
 # Valid values for ARCH:
 # linux/amd64
@@ -42,6 +43,7 @@ declare -a ARCHES=("linux/amd64")
 build_docker_images=true
 source_and_binary=true
 need_shift=false
+OTHEROPT=1
 
 # Parsing options
 while getopts "dBDhb:t:ksu" OPT; do
@@ -49,13 +51,15 @@ while getopts "dBDhb:t:ksu" OPT; do
         d) build_docker_images=false ; need_shift=true ;;
         B) source_and_binary=false ; need_shift=true ;;
         D) debug_build="bash" ; need_shift=true ;;
+# The other options will get passed to ps-source-builder so we must not shift them
+        b|t) ((OTHEROPT+=2)) ;;
+        k|s|u) ((OTHEROPT+=1)) ;;
         h)
             show_help >&2
             exit 1 ;;
-# The other options will get passed to ps-source-builder
     esac
 done
-[ $need_shift ] && shift
+shift $((OPTIND-OTHEROPT))
 
 # Get the gitrepo to build
 GITREPO=`echo $@ | awk '{print $NF}'`
@@ -86,7 +90,13 @@ case $OSimage in
     focal) OSimage=ubuntu:$OSimage ;;
     stretch) OSimage=debian:$OSimage ;;
 esac
-export OSimage REPO useproxy
+export OSimage REPO
+if [ -n "$proxy" ]; then
+    # If $proxy is set, then we will use it
+    export useproxy=with
+else
+    export useproxy=without
+fi
 
 # Initialise
 LOGS_PREFIX="logs/binary_build"

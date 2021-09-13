@@ -10,8 +10,8 @@ x-build-args:
   OSimage: "$OSimage"
   ARCH: "$ARCH"
   REPO: "$REPO"
-  useproxy: "${useproxy:-no}"
-  proxy: "$proxy"
+  useproxy: "${useproxy:-without}"
+  proxy: "${proxy:-}"
 
 x-tmpfs:
   &default-tmpfs
