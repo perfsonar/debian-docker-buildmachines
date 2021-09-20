@@ -5,12 +5,12 @@ shopt -s extglob
 # Usage info
 show_help() {
     cat << EOF
-    Usage: ${0##*/} [-t DEBIAN_TAG] [-s] [-u] [REPO]
+    Usage: ${0##*/} [-t DEBIAN_TAG] [-k] [-s] [-u] [REPO]
     This script builds a perfSONAR package out of a git REPO.
     The build happens for the $DIST Debian distro (\$DIST should be set in your ENV).
 
     Arguments understood:
-        -k: keep locally built packages (can be useful to solve dependencies)
+        -k: use and keep locally built packages (can be useful to solve dependencies)
         -s: build only the source package
         -t: git tag to build from (defaults no tag), overrides any -b arg
             (upstream is read from gbp.conf)
@@ -105,7 +105,7 @@ echo -e "\nBuilding \033[1;32m${REPO}\033[0;37m from branch \033[1;36m${branch}\
 [ $tag ] && echo -e "\033[1;32mThis is a \033[1;33mrelease\033[1;32m, tag \033[1;33m${tag}\033[1;32m will be built !\033[0m\n"
 # TODO: Pass this directory to build-source-package to solve dependencies
 if $keep_builds ; then
-    echo "To solve dependencies, I will also use packages from ${REPO_LOC}/build_results if any."
+    /usr/local/bin/ps-local-repo ${REPO_LOC}/build_results/
 else
     rm -rf ${REPO_LOC}/build_results/*
 fi

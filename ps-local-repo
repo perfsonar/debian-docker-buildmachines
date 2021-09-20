@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+# This script configures a local APT repository to use locally built packages
+# It can be given an argument, the absolut path to the directory where the repository exists
+
+LOCAL_REPO=$1
+echo "To solve dependencies, I will also use packages from ${LOCAL_REPO} if any."
+echo "# Locally built packages" | sudo tee /etc/apt/sources.list.d/localy-built-packages.list
+echo "deb [trusted=yes] file:${LOCAL_REPO} ./" | sudo tee -a /etc/apt/sources.list.d/localy-built-packages.list
+sudo apt update
+

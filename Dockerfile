@@ -5,7 +5,7 @@
 ARG useproxy=without
 # TODO: move to pS provided base OS image
 # OS image to use as a base
-ARG OSimage=debian:stretch
+ARG OSimage=debian:buster
 ARG ARCH=linux/amd64
 FROM --platform=${ARCH} ${OSimage} AS pre-base
 
@@ -75,7 +75,8 @@ RUN apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Shared volume for builds and installs
+# Shared volume for builds and installs (will be  referenced by the local APT repo)
+COPY ./ps-local-repo /usr/local/bin/ps-local-repo
 VOLUME /mnt/build
 
 ### Repositories configuration and build tools setup
@@ -88,14 +89,15 @@ RUN cat /tmp/docker-tmp >> /etc/apt/sources.list && rm /tmp/docker-tmp
 # Building and repository mgmt tools needed for the build
 #TODO: Need to change stretch-backport to something that will also work with other distros
 RUN apt-get update && apt-get install -y \
-        git-buildpackage \
-        lintian vim
+        git-buildpackage lintian vim
 #        vim && \
 #    apt-get -t buster-backports install -y \
 #        lintian
 
 # Create build user
 RUN useradd -d /home/psbuild -G sudo -m -p public -s /bin/bash psbuild
+RUN echo "psbuild	ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers.d/psbuild
+RUN chmod 0440 /etc/sudoers.d/psbuild
 
 # Copy build scripts
 COPY ./ps-source-builder /usr/local/bin/ps-source-builder
@@ -106,9 +108,6 @@ CMD ["/lib/systemd/systemd"]
 
 ### Testing image setup
 FROM ps-base-image AS test-image
-
-# Configure local APT repository to install package to test
-RUN echo "deb [trusted=yes] file:/mnt/build/build_results/ ./" > /etc/apt/sources.list.d/localy-built-packages.list
 
 # Let docker know that pscheduler listens on 443
 EXPOSE 443

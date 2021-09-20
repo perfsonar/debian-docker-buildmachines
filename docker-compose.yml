@@ -21,7 +21,7 @@ x-tmpfs:
 x-volumes:
   &default-volumes
   - /sys/fs/cgroup:/sys/fs/cgroup:ro
-  - ../:/mnt/build
+  - ..:/mnt/build
 
 ###
 # The first service is only to build the required images
