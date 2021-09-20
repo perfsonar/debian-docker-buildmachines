@@ -1,24 +1,41 @@
 # Debian/Ubuntu build and testing containers
-This directoy needs to be at the same level as the other perfSONAR repositories that you want to build package for.  It provides some scripts and a Docker setup to build Debian/Ubuntu packages out of a perfSONAR source repository.
+This directoy needs to be at the same level as the other perfSONAR repositories that you want to build package for.  It provides some scripts and a Docker setup to build Debian/Ubuntu packages out of a perfSONAR source repository.  The currently checked-out branch will be built.
+
+These scripts rely heavily on Docker and a working `docker buildx` setup.
 
 ## Build packages
 To build a Debian/Ubuntu package, run something like:
 
 ./build-in-docker toolkit
 
-* args and environment variables:
-  * `-t` the tag of the repository you want to build (staging/release package)
+* args understood (full list in script itself):
+  * `-d` don't rebuild Docker images but use locally existing one
+  * `-B` don't rebuild source package but use previously build one
+  * `-D` debug build, will get you into a shell instead of doing the build
+  * `-k` use and keep locally built packages (can be useful to solve build dependencies)
+  * `-s` build only the source package
 
 The resulting packages will be located in a new directory at the same level as the other repositories called `build_results`
 
 The build will use the information from the `debian/gbp.conf` file to know on which distro the package should be built and with which perfSONAR repository the dependencies should be solved.
 
+Once you have the `docker buildx` images ready, you can call all subsequent builds with `-d`.
+
+There is provision to use a HTTP proxy to download packages if you need to do so.  See the examples below and in the scripts.
 
 ### Examples
 
 * Building `perfsonar-graphs` located in the `../graphs` directory:
 ```
 ./build-in-docker graphs
+```
+* Building `perfsonar-graphs` a second time:
+```
+./build-in-docker -d graphs
+```
+* Building `perfsonar-graphs` to debug the binary build and keep the previously localy built packages:
+```
+./build-in-docker -dBD -k graphs
 ```
 * Building `pscheduler-archiver-rabbitmq` using a local proxy:
 ```
