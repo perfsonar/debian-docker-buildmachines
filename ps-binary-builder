@@ -15,15 +15,21 @@ BUILD_DIR='binary'
 # Go where the source package is
 cd ${BUILD_SRC}/${GITREPO}
 
-# Setup local repository if we have one
-if  [ -d ${BUILD_RESULTS}/ ]; then
-    /usr/local/bin/ps-local-repo ${BUILD_RESULTS}/
-fi
-
 # Announce what we'll do!
 # We get $BUILD_ARCH, $DIST and $RELEASE from the content of the source package
 . ${REPO_LOC}/distribution/debian/check-release-repo.sh
 [ $? -eq 0 ] || exit 1
+
+# Check build architecture
+if [[ `uname -m` != "x86_64" && "$BUILD_ARCH" == "all" ]]; then
+    echo "I only build binary independent package on amd64. I'll skip this build."
+    exit 0
+fi
+
+# Setup local repository if we have one
+if  [ -d ${BUILD_RESULTS}/ ]; then
+    /usr/local/bin/ps-local-repo ${BUILD_RESULTS}/
+fi
 
 # Extract source package
 mkdir -p $BUILD_DIR
@@ -48,10 +54,6 @@ if [ `uname -m` == "x86_64" ]; then
     # Only run lintian on amd64 (automatically called from debuild)
     debuild -rfakeroot -i -us -uc -sa -b
 else
-    if [ "$BUILD_ARCH" == "all" ]; then
-        echo "I only build binary independent package on amd64."
-        exit 0
-    fi
     # Calling directly dpkg-buildpackage on other ARCHES so we don't run Lintian that seems to have an issue when running under QEMU
     dpkg-buildpackage -rfakeroot -us -uc -i -sa -b
 fi

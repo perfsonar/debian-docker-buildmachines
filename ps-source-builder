@@ -108,6 +108,7 @@ if $keep_builds ; then
     /usr/local/bin/ps-local-repo ${REPO_LOC}/build_results/
 else
     rm -rf ${REPO_LOC}/build_results/*
+    (cd ${REPO_LOC}/build_results/; apt-ftparchive packages . > Packages)
 fi
 
 cd ..
