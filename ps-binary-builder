@@ -33,8 +33,13 @@ fi
 
 # Extract source package
 mkdir -p $BUILD_DIR
-tar -x -C $BUILD_DIR --strip-components 1 -f *.orig.*
-tar -x -C $BUILD_DIR -f *.debian.*
+if grep -q '(native)' *.dsc ; then
+    echo "This is a Debian native package, there is no orig tarball."
+    tar -x -C $BUILD_DIR --strip-components 1 -f *.tar.xz
+else
+    tar -x -C $BUILD_DIR --strip-components 1 -f *.orig.*
+    tar -x -C $BUILD_DIR -f *.debian.*
+fi
 cd $BUILD_DIR
 
 # If we were given an second argument, we run it as a command, cheap debugging
