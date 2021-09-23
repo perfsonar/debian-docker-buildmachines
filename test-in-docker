@@ -30,7 +30,7 @@ declare -a ARCHES=("linux/amd64" "linux/arm64")
 # See other valid values in build-in-docker
 # The ARCHES used need to have a valid image already built, this script is not building any, only the build-in-docker script is building the images
 # TODO: Move the image building part into dedicated script
-declare -a OSimages=("debian:stretch" "debian:buster" "ubuntu:xenial" "ubuntu:bionic" "ubuntu:focal")
+declare -a OSimages=("debian:stretch" "debian:buster" "ubuntu:bionic" "ubuntu:focal")
 build_docker_images=true
 REPO="perfsonar-minor-snapshot"
 
@@ -100,16 +100,18 @@ for OSimage in ${OSimages[@]}; do
     echo "=========="
     echo -e "Starting up containers for \033[1m$OSimage\033[0m"
     docker compose up -d deb_test $TEST_CONTAINERS
+    OUTPUT+="-----\n"
     for ARCH in ${ARCHES[@]}; do
         LARCH=${ARCH#*\/}
         LARCH=${LARCH/\/}
         echo -e "\n===== Testing installation of \033[1m$PKG\033[0m on \033[1m$ARCH.$OSimage\033[0m in \033[1m$LARCH-test\033[0m container ====="
+        [ -n "$debug_build" ] && echo -e "\033[1;33m -D\033[0;33m : We will run a debug shell, i.e. call $debug_build if the install fails.\033[0m\n"
         # TODO: can we run all tests in parallel?
-        docker compose exec ${LARCH}_test /usr/local/bin/ps-install-tester $PKG
+        docker compose exec ${LARCH}_test /usr/local/bin/ps-install-tester $PKG $debug_build
         if [ $? -eq 0 ]; then
             OUT="\033[32mInstallation of \033[1m$PKG\033[0;32m for \033[1m$OSimage\033[0;32m on \033[1m$ARCH\033[0;32m went fine.\033[0m"
         else
-            OUT="\033[33mThere seems to be a problem during the installation of \033[1m$PKG\033[0;33m for \033[1m$OSimage\033[0;33m on \033[1m$ARCH\033[0m"
+            OUT="\033[33mSome problem occured during the installation of \033[1m$PKG\033[0;33m for \033[1m$OSimage\033[0;33m on \033[1m$ARCH\033[0m"
         fi
         echo -e "\n$OUT"
         OUTPUT+=$OUT"\n"
@@ -117,9 +119,8 @@ for OSimage in ${OSimages[@]}; do
     done
     echo -e "\nNow stopping all containers"
     docker compose down
-    OUTPUT+="-----\n"
 done
 
-echo -e "\n\n\033[1mTesting summary:\033[0m\n-----"
+echo -e "\n\n\033[1mTesting summary:\033[0m"
 echo -e $OUTPUT
 
