@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# This script will try to install the package given as argument
+
+# Defaults
+# Repository to get source from
+REPO_LOC='/mnt/build/'
+
+# Check argument
+if [ $# -gt 0 ]; then
+    PKG=$1
+else
+    echo "What package do you want me to try to install?"
+    exit 1
+fi
+
+# Setup the local repository and update APT
+/usr/local/bin/ps-local-repo ${REPO_LOC}/build_results/
+
+# Install the package
+apt-get -y install $PKG
+

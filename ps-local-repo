@@ -1,11 +1,24 @@
 #!/usr/bin/env bash
 
 # This script configures a local APT repository to use locally built packages
-# It can be given an argument, the absolut path to the directory where the repository exists
+# It needs to be given an argument, the absolut path to the directory where the repository exists
 
-LOCAL_REPO=$1
+if [ $# -gt 0 ]; then
+    LOCAL_REPO=$1
+else
+    echo "Where is the local repository located?"
+    exit 1
+fi
+
+# The script can be run as root or as a user with sudo access
+# We might not know if sudo is actually insalled or not
+if [[ $(/usr/bin/id -u) -ne 0 ]]; then
+    SUDO="sudo"
+else
+    SUDO=""
+fi
 echo "To solve dependencies, I will also use packages from ${LOCAL_REPO} if any."
-echo "# Locally built packages" | sudo tee /etc/apt/sources.list.d/localy-built-packages.list
-echo "deb [trusted=yes] file:${LOCAL_REPO} ./" | sudo tee -a /etc/apt/sources.list.d/localy-built-packages.list
-sudo apt update
+echo "# Using locally built packages" | $SUDO tee /etc/apt/sources.list.d/localy-built-packages.list > /dev/null
+echo "deb [trusted=yes] file:${LOCAL_REPO} ./" | $SUDO tee -a /etc/apt/sources.list.d/localy-built-packages.list > /dev/null
+$SUDO apt update
 

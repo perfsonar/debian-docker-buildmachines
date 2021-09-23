@@ -45,28 +45,19 @@ proxy=172.17.0.1:3128 package=pscheduler-archiver-rabbitmq ./build-in-docker psc
 ```
 
 ## Test packages
-To test the installation of a resulting package, run something like:
-
-./test-in-docker package.deb
-
 This project provides ways of testing installation of perfSONAR DEB package-based bundles on Debian-based systems using Docker containers.
 
 Fully Supported:
  * Debian 9 Stretch
  * Debian 10 Buster
- * Ubuntu 16 Xenial Xerus
  * Ubuntu 18 Bionic Beaver
+ * Ubuntu 20 Focal Fossa
 
-You can run the tests by executing `test_install_instructions.sh $REPO $OS $BUNDLE` (with all args optional but the previous one always required) where:
+To test the installation of a resulting package, run something like:
 
- * `$REPO` is one of these (default is to use production):
-   * `perfsonar-release` (production)
-   * `perfsonar-patch-snapshot`
-   * `perfsonar-minor-snapshot`
-   * `perfsonar-patch-staging`
- * `$OS` is one of these (default to test all):
-   * `debian:stretch`
-   * `debian:buster`
-   * `ubuntu:xenial`
-   * `ubuntu:bionic`
+./test-in-docker package
+
+The package will be installed in the different OS supported and for different architectures.
+
+You can change the perfSONAR repository to be used or limit the number of OS to install to by using the `-r` and `-o` options.  See the help included in the script for all the options.
 

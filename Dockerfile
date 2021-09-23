@@ -109,6 +109,9 @@ CMD ["/lib/systemd/systemd"]
 ### Testing image setup
 FROM ps-base-image AS test-image
 
+# Copy testing script
+COPY ./ps-install-tester /usr/local/bin/ps-install-tester
+
 # Let docker know that pscheduler listens on 443
 EXPOSE 443
 

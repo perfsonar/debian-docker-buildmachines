@@ -1,30 +1,68 @@
 #!/usr/bin/env bash
 
-#######
-# test-in-docker [package] [repo] [osimage]
-# This script will test the installation of a locally build package
-#######
+# Usage info
+show_help() {
+    cat << EOF
+    Usage: ${0##*/} -dD -r [repo] -o [osimage] package
+    This script will test the installation of a locally build package
+    It is meant to verify that all dependencies can be satisfied at installation time
+    Requirements:
+        - Need to be in a directory at the same level as the gitrepo to be built
+        - Package to be test available in the perfSONAR repo or in the local repo
+
+        Arguments understood:
+        -d don't rebuild Docker images but use locally existing one
+        -D debug install, will get you into a shell instead of doing the install
+        -r (optional) repository to be used (local repo will be automatically used as well)
+            if not repo given, then perfsonar-minor-snapshot will be used)
+        -o (optional) OS to use to try the install (if empty, then all OS known will be tried)
+        package to be installed
+
+    Some examples:
+    ./test-in-docker perfsonar-toolkit
+    ./test-in-docker -r perfsonar-5.0-snapshot -o debian:buster perfsonar-toolkit
+    proxy=172.17.0.1:3128 ./test-in-docker -r perfsonar-5.0-snapshot iperf3
+EOF
+}
 
 # Defaults
-declare -a ARCHES=("linux/amd64" "linux/arm/v7")
+declare -a ARCHES=("linux/amd64" "linux/arm64")
+# See other valid values in build-in-docker
+# The ARCHES used need to have a valid image already built, this script is not building any, only the build-in-docker script is building the images
+# TODO: Move the image building part into dedicated script
 declare -a OSimages=("debian:stretch" "debian:buster" "ubuntu:xenial" "ubuntu:bionic" "ubuntu:focal")
+build_docker_images=true
+REPO="perfsonar-minor-snapshot"
 
 # Parse CLI args
+# Parsing options
+while getopts "dDhr:o:" OPT; do
+    case $OPT in
+        d) build_docker_images=false ;;
+        D) debug_build="bash" ;;
+        r) REPO=$OPTARG ;;
+        o) OSimages=("$OPTARG") ;;
+        h)
+            show_help >&2
+            exit 1 ;;
+    esac
+done
+shift $((OPTIND-1))
 if [ -n "$1" ]; then
     PKG=$1
-    if [ -n "$2" ]; then
-        # Set repo
-        declare -a REPO=$2
-        if [ -n "$3" ]; then
-            # Set OSimage
-            declare -a OSimages=("$3")
-        fi
-    fi
 else
     echo "I need the name of package to test."
     exit 1
 fi
-export REPO useproxy
+
+# Variable used by the Docker setup
+export OSimage ARCH REPO useproxy
+if [ -n "$proxy" ]; then
+    # If $proxy is set, then we will use it
+    useproxy=with
+else
+    useproxy=without
+fi
 
 # Initialise
 LOGS_PREFIX="logs/binary_build"
@@ -35,24 +73,53 @@ for ARCH in ${ARCHES[@]}; do
     LARCH=${ARCH#*\/}
     TEST_CONTAINERS+=${LARCH/\/}"_test "
 done
+
+# These 2 vars need to be set before calling docker compose
+OSimage=${OSimages[0]}
+ARCH=linux/amd64
 docker compose down
 
-# Start containers
-# TODO: deb_test should be running on the main Docker host ARCH and be used to run additional commands, if needed
-ARCH=linux/amd64 docker compose up -d deb_test $TEST_CONTAINERS
+if $build_docker_images ; then
+    # Loop on all OS we want to test
+    for OSimage in ${OSimages[@]}; do
+        # Loop on all ARCHES we want to prepare images
+        for ARCH in ${ARCHES[@]}; do
+            echo -e "\n\033[1;35m============\033[0;35m\nBuilding OS: $OSimage.$ARCH - pS repo: $REPO\n\033[1m============\033[0m\n"
+            docker buildx bake --load deb_test
+        done
+    done
+else
+    echo -e "\n\033[1;33m -d\033[0;33m : I'm not building Docker images but will use the ones already existing in the local registry.\033[0m\n"
+fi
 
-# Loop on all ARCHES to test install the new package
-# Loop on all OS we want to test
+# TODO: deb_test should be running on the main Docker host ARCH and be used to run additional commands, if needed
+
+OUTPUT=""
+# Loop on all OSimage and ARCHES to test install the new package
 for OSimage in ${OSimages[@]}; do
-    LARCH=${ARCH#*\/}
-    LARCH=${LARCH/\/}
-    echo -e "\n===== Testing \033[1m$PKG\033[0m on \033[1m$ARCH.$OSimage\033[0m in \033[1m$LARCH-test\033[0m container =====\033[0m"
-    # TODO: can we run all tests in parallel?
-    docker compose exec ${LARCH}_test "apt-get update; apt-get -y install $PKG"
-    # Should we run autopkgtest instead? Or after installation if they exist?
+    echo "=========="
+    echo -e "Starting up containers for \033[1m$OSimage\033[0m"
+    docker compose up -d deb_test $TEST_CONTAINERS
+    for ARCH in ${ARCHES[@]}; do
+        LARCH=${ARCH#*\/}
+        LARCH=${LARCH/\/}
+        echo -e "\n===== Testing installation of \033[1m$PKG\033[0m on \033[1m$ARCH.$OSimage\033[0m in \033[1m$LARCH-test\033[0m container ====="
+        # TODO: can we run all tests in parallel?
+        docker compose exec ${LARCH}_test /usr/local/bin/ps-install-tester $PKG
+        if [ $? -eq 0 ]; then
+            OUT="\033[32mInstallation of \033[1m$PKG\033[0;32m for \033[1m$OSimage\033[0;32m on \033[1m$ARCH\033[0;32m went fine.\033[0m"
+        else
+            OUT="\033[33mThere seems to be a problem during the installation of \033[1m$PKG\033[0;33m for \033[1m$OSimage\033[0;33m on \033[1m$ARCH\033[0m"
+        fi
+        echo -e "\n$OUT"
+        OUTPUT+=$OUT"\n"
+        # Should we run autopkgtest instead? Or after installation if test exist?
+    done
+    echo -e "\nNow stopping all containers"
+    docker compose down
+    OUTPUT+="-----\n"
 done
 
-# Shuting down
-echo -e "\nNow stopping all containers."
-docker compose down
+echo -e "\n\n\033[1mTesting summary:\033[0m\n-----"
+echo -e $OUTPUT
 
