@@ -5,7 +5,7 @@ variable "REPO" {
     default = "perfsonar-patch-snapshot"
 }
 variable "OSimage" {
-    default = "debian:stretch"
+    default = "debian:buster"
 }
 variable "useproxy" {
     default = "without"
@@ -22,7 +22,6 @@ group "default" {
 // All the build targets
 target "single_build" {
     inherits = ["deb_build"]
-    platforms = ["linux/amd64"]
     output = ["type=docker"]
 }
 target "dual_build" {
@@ -37,7 +36,6 @@ target "full_build" {
 }
 target "single_test" {
     inherits = ["deb_test"]
-    platforms = ["linux/amd64"]
     output = ["type=docker"]
 }
 

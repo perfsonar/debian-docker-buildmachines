@@ -125,8 +125,8 @@ else
 fi
 
 # Launch all containers, with deb_build running on amd64
-# TODO: deb_build should be running on the main Docker host ARCH
-docker compose up -d deb_build $CONTAINERS
+# TODO: deb_build should be running on the main Docker host ARCH, which might not always be amd64
+ARCH=linux/amd64 docker compose up -d deb_build $CONTAINERS
 
 if ${source_and_binary} ; then
     # Build source package and feed all the parameters to ps-builder

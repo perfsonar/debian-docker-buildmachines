@@ -67,6 +67,8 @@ if [ -z "$REPO" ]; then
     exit 1
 fi
 
+echo -n "CPU architecture is "
+lscpu | grep Architecture | cut -c 22-
 # Do we want to clone the repo or do we have it already existing?
 if $git_update ; then
     # Checkout source from local dev repo
