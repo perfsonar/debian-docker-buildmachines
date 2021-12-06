@@ -3,7 +3,7 @@ This repository provides some scripts and a Docker setup to build Debian/Ubuntu 
 
 This directoy needs to be at the same level as the other perfSONAR repositories that you want to build. The checked-out branch of the source repo will be built.  You'll also need the [distribution](https://github.com/perfsonar/distribution/) perfSONAR repository cloned at the same level as the source repositories, the setup currently uses the 5.0.0 branch of this distribution repository.
 
-These scripts rely heavily on Docker and a working `docker buildx` setup.
+These scripts rely heavily on Docker and a working `docker buildx` recent setup as they're making use of the Docker [Compose V2](https://docs.docker.com/compose/cli-command/) commands and [Buildkit](https://docs.docker.com/develop/develop-images/build_enhancements/).  So make sure you activate both (how to activate those features depend on the host platform from which you are using Docker).
 
 ## Build packages
 To build a Debian/Ubuntu package, run something like:

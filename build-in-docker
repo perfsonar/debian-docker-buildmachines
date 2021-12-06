@@ -107,7 +107,6 @@ CONTAINERS=""
 for ARCH in ${ARCHES[@]}; do
     LARCH=${ARCH#*\/}
     CONTAINERS+=${LARCH/\/}"_build "
-    TEST_CONTAINERS+=${LARCH/\/}"_test "
 done
 # ARCH need to be set before calling docker compose
 ARCH=linux/amd64

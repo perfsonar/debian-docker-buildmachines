@@ -65,7 +65,7 @@ fi
 
 if [ $? -eq 0 ]; then
     # We copy the resulting packages back to the main host
-    echo -e "\n\033[1;32mBuild succeeded, the resulting packages will be copied the shared volume ${BUILD_RESULTS}\033[0m\n"
+    echo -e "\n\033[1;32mBuild succeeded, the resulting packages will be copied to the shared volume ${BUILD_RESULTS}\033[0m\n"
     cp -afv ../!(${SRC_DIR}|${BUILD_DIR}) ${BUILD_RESULTS}
 
     # And create a Packages file to serve as a local deb repo

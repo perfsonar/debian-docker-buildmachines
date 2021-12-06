@@ -99,7 +99,7 @@ OUTPUT=""
 for OSimage in ${OSimages[@]}; do
     echo "=========="
     echo -e "Starting up containers for \033[1m$OSimage\033[0m"
-    docker compose up -d deb_test $TEST_CONTAINERS
+    ARCH=linux/amd64 docker compose up -d deb_test $TEST_CONTAINERS
     OUTPUT+="-----\n"
     for ARCH in ${ARCHES[@]}; do
         LARCH=${ARCH#*\/}
