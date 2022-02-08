@@ -14,8 +14,11 @@ To build a Debian/Ubuntu package, run something like:
   * `-d` don't rebuild Docker images but use locally existing one
   * `-B` don't rebuild source package but use previously build one
   * `-D` debug build, will get you into a shell instead of doing the build
-  * `-k` use and keep locally built packages (can be useful to solve build dependencies)
-  * `-s` build only the source package
+  * args passed to ps-source-builder:
+    * `-k` use and keep locally built packages (can be useful to solve build dependencies)
+    * `-s` build only the source package
+    * `-t tagname` build the given tag
+    * `-b branchname` build the given branch
 
 The resulting packages will be located in a new directory at the same level as the other repositories called `build_results`
 
@@ -34,6 +37,10 @@ There is provision to use a HTTP proxy to download packages if you need to do so
 * Building `perfsonar-graphs` a second time:
 ```
 ./build-in-docker -d graphs
+```
+* Building `perfsonar-graphs` version 4.4.2
+```
+./build-in-docker -t debian/stretch/4.4.2-1 graphs
 ```
 * Building `perfsonar-graphs` to debug the binary build and keep the previously localy built packages:
 ```
