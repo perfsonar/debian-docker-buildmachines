@@ -25,7 +25,7 @@ show_help() {
     
     Some examples:
     ./build-in-docker -t debian/stretch/4.4.0-1.b1-1 toolkit
-    package=pscheduler-archiver-rabbitmq ./build-in-docker -b 4.4.0 pscheduler
+    package=pscheduler-archiver-rabbitmq ./build-in-docker pscheduler
 EOF
 }
 
@@ -71,7 +71,7 @@ elif [ -z "$package" ]; then
 fi
 
 # Check if directory contains a Debian package to build
-GBPCONF=`find ../$GITREPO/$package -path */debian/gbp.conf`
+GBPCONF=`find ../$GITREPO/$package -path */debian/gbp.conf -not -path */shared/debian/gbp.conf | head -1`
 if [ $? -ne 0 ]; then
     echo "This doesn't seem to be a package I can build."
     echo "There is no debian/gbp.conf file in ../$GITREPO/$package"

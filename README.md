@@ -18,7 +18,6 @@ To build a Debian/Ubuntu package, run something like:
     * `-k` use and keep locally built packages (can be useful to solve build dependencies)
     * `-s` build only the source package
     * `-t tagname` build the given tag
-    * `-b branchname` build the given branch
 
 The resulting packages will be located in a new directory at the same level as the other repositories called `build_results`
 

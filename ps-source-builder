@@ -12,7 +12,7 @@ show_help() {
     Arguments understood:
         -k: use and keep locally built packages (can be useful to solve dependencies)
         -s: build only the source package
-        -t: git tag to build from (defaults no tag), overrides any -b arg
+        -t: git tag to build from (defaults no tag)
             (upstream is read from gbp.conf)
         -u: don't checkout nor update the local git repository
             (useful for subsequent builds with no change to sources)
