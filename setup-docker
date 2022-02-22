@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# This script sets up all the Docker images needed to build perfSONAR packages
+# for one given perfSONAR repository ($REPO)
+
+declare -a ARCHES=("linux/amd64" "linux/arm64")
+#declare -a ARCHES=("linux/amd64" "linux/arm64" "linux/arm/v7" "linux/arm/v5" "linux/i386" "linux/ppc64le")
+declare -a OSimages=("debian:buster")
+#declare -a OSimages=("debian:stretch" "debian:buster" "ubuntu:bionic" "ubuntu:focal")
+
+### Check current status
+docker buildx ls
+docker ps -a
+docker images
+
+### Cleanup previous images and cache
+echo "Removing previous images for $REPO and clearing cache."
+# Loop on all OS we want to test
+for OSimage in ${OSimages[@]}; do
+    # Loop on all ARCHES we want to prepare images
+    for ARCH in ${ARCHES[@]}; do
+        docker rmi build.$REPO.$ARCH.$OSimage
+    done
+done
+docker system prune -f
+docker images
+
+### Prepare new images
+export OSimage ARCH REPO
+# Loop on all OS we want to test
+for OSimage in ${OSimages[@]}; do
+    # Loop on all ARCHES we want to prepare images
+    for ARCH in ${ARCHES[@]}; do
+        echo "Building OS: $OSimage.$ARCH - pS repo: $REPO"
+        docker buildx bake --load deb_build
+    done
+done
+
+echo "All images built!"
+
