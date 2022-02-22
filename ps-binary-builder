@@ -17,7 +17,7 @@ cd ${BUILD_SRC}/${GITREPO}
 
 # Announce what we'll do!
 # We get $BUILD_ARCH, $DIST and $RELEASE from the content of the source package
-. ${REPO_LOC}/distribution/debian/check-release-repo.sh
+. ${REPO_LOC}/debian-docker-buildmachines/check-release-repo.sh
 [ $? -eq 0 ] || exit 1
 
 # Check build architecture

@@ -115,7 +115,7 @@ fi
 
 cd ..
 # Build the source package
-${REPO_LOC}/distribution/debian/build-source-package.sh
+${REPO_LOC}/debian-docker-buildmachines/build-source-package.sh
 [ $? -eq 0 ] || exit 1
 
 PKG=`awk '/^Source:/ {print $2}' *.dsc`

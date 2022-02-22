@@ -3,7 +3,7 @@ This repository provides some scripts and a Docker setup to build Debian/Ubuntu 
 
 This directoy needs to be at the same level as the other perfSONAR repositories that you want to build. The checked-out branch of the source repo will be built.  You'll also need the [distribution](https://github.com/perfsonar/distribution/) perfSONAR repository cloned at the same level as the source repositories, the setup currently uses the 5.0.0 branch of this distribution repository.
 
-These scripts rely heavily on Docker and a working `docker buildx` recent setup as they're making use of the Docker [Compose V2](https://docs.docker.com/compose/cli-command/) commands and [Buildkit](https://docs.docker.com/develop/develop-images/build_enhancements/).  So make sure you activate both (how to activate those features depend on the host platform from which you are using Docker).
+These scripts rely heavily on Docker and a working `docker buildx` recent setup as they're making use of the Docker [Compose V2](https://docs.docker.com/compose/cli-command/) commands and [Buildkit](https://docs.docker.com/develop/develop-images/build_enhancements/).  So make sure you activate both (how to activate those features depend on the host platform from which you are using Docker, see more information at the end of this README).
 
 ## Build packages
 To build a Debian/Ubuntu package, run something like:
@@ -66,4 +66,14 @@ To test the installation of a resulting package, run something like:
 The package will be installed in the different OS supported and for different architectures.
 
 You can change the perfSONAR repository to be used or limit the number of OS to install to by using the `-r` and `-o` options.  See the help included in the script for all the options.
+
+## Setup your Docker environment
+
+### On Ubuntu
+To run Docker on Ubuntu:
+ * use the [official documentation](https://docs.docker.com/engine/install/ubuntu/) for the initial Docker install
+ * install [Docker Compose V2](https://docs.docker.com/compose/cli-command/#install-on-linux)
+ * buildx should already be part of the latest Docker installs
+ * install and register the latest qemu image running the following command:
+   * `docker run --rm --privileged docker/binfmt:a7996909642ee92942dcd6cff44b9b95f08dad64` and use the latest tag from https://hub.docker.com/r/docker/binfmt/tags
 
