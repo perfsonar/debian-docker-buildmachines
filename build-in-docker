@@ -130,7 +130,7 @@ ARCH=linux/amd64 docker compose up -d deb_build $CONTAINERS
 if ${source_and_binary} ; then
     # Build source package and feed all the parameters to ps-builder
     echo -e "\n\033[1m===== Building source package in source-build container =====\033[0m"
-    ARCH=linux/amd64 docker compose exec --user psbuild -e package=$package deb_build /usr/local/bin/ps-source-builder $*
+    ARCH=linux/amd64 docker compose exec -T --user psbuild -e package=$package deb_build /usr/local/bin/ps-source-builder $*
     # TODO: how to actually stop?
     [ $? -eq 0 ] || exit 1
 else
@@ -144,7 +144,7 @@ for ARCH in ${ARCHES[@]}; do
     echo -e "\n===== Building \033[1mbinary package\033[0m on \033[1m$ARCH.$OSimage\033[0m in \033[1m$LARCH-build\033[0m container ====="
     [ -n "$debug_build" ] && echo -e "\033[1;33m -D : We will run a debug binary build, i.e. call $debug_build.\033[0m\n"
     # TODO: can we run all builds in parallel?
-    docker compose exec --user psbuild -e package=$package ${LARCH}_build /usr/local/bin/ps-binary-builder $GITREPO $debug_build
+    docker compose exec -T --user psbuild -e package=$package ${LARCH}_build /usr/local/bin/ps-binary-builder $GITREPO $debug_build
 done
 
 # Shuting down

@@ -64,10 +64,11 @@ RUN printf '#!/bin/sh\nexit 0' > /usr/sbin/policy-rc.d
 # Configure perfSONAR repository (given as argument) and GPG key
 ARG REPO=perfsonar-minor-snapshot
 RUN echo "Adding perfSONAR repository: $REPO"
-RUN if [ "$REPO" = "perfsonar-release" ] ; \
+RUN /bin/bash -c 'if [[ "${REPO##*-}" < "a" ]] ; \
+    # If $REPO substring is a number then we have a release repository
     then curl http://downloads.perfsonar.net/debian/perfsonar-official.gpg.key | apt-key add - ; \
     else curl http://downloads.perfsonar.net/debian/perfsonar-snapshot.gpg.key | apt-key add - ; \
-    fi
+    fi'
 RUN curl -o /etc/apt/sources.list.d/$REPO.list http://downloads.perfsonar.net/debian/$REPO.list
 
 # Some APT cleanup
