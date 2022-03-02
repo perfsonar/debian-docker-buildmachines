@@ -20,5 +20,5 @@ fi
 echo "To solve dependencies, I will also use packages from ${LOCAL_REPO} if any."
 echo "# Using locally built packages" | $SUDO tee /etc/apt/sources.list.d/localy-built-packages.list > /dev/null
 echo "deb [trusted=yes] file:${LOCAL_REPO} ./" | $SUDO tee -a /etc/apt/sources.list.d/localy-built-packages.list > /dev/null
-$SUDO apt update
+$SUDO apt-get -qy update
 

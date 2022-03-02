@@ -2,6 +2,17 @@
 # extglob is needed for the call to tar in the binary build
 shopt -s extglob
 
+# Default values
+keep_builds=false
+
+# Parsing options
+while getopts "k" OPT; do
+    case $OPT in
+        k) keep_builds=true ;;
+    esac
+done
+shift $((OPTIND-1))
+
 # Arg must be the git repo to build
 GITREPO=$1
 
@@ -27,7 +38,7 @@ if [[ `uname -m` != "x86_64" && "$BUILD_ARCH" == "all" ]]; then
 fi
 
 # Setup local repository if we have one
-if  [ -d ${BUILD_RESULTS}/ ]; then
+if $keep_builds ; then
     /usr/local/bin/ps-local-repo ${BUILD_RESULTS}/
 fi
 

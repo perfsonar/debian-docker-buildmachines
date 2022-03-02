@@ -3,7 +3,7 @@
 # Usage info
 show_help() {
     cat << EOF
-    Usage: ${0##*/} -dBD [args_as_for_ps-source-builder] [gitrepo]
+    Usage: ${0##*/} -dBDjk [args_as_for_ps-source-builder] [gitrepo]
     This script will build docker images and launch a git repo build in a container
     Requirements:
         - Needs to be in a directory at the same level as the gitrepo to be built
@@ -14,6 +14,8 @@ show_help() {
         -d don't rebuild Docker images but use locally existing one
         -B don't rebuild source package but use previously build one
         -D debug build, will get you into a shell instead of doing the build
+        -j build in Jenkins, use -T switch when calling docker exec
+        -k: use and keep locally built packages (can be useful to solve dependencies)
 
         - all other args are directly passed to the ps-source-builder script
           but they need to be separated with a blank space ' '
@@ -43,17 +45,21 @@ declare -a ARCHES=("linux/amd64" "linux/arm64")
 build_docker_images=true
 source_and_binary=true
 need_shift=false
+jenkins_build=false
+keep_builds=false
 OTHEROPT=1
 
 # Parsing options
-while getopts "dBDhb:t:ksu" OPT; do
+while getopts "dBDhjb:t:ksu" OPT; do
     case $OPT in
         d) build_docker_images=false ; need_shift=true ;;
         B) source_and_binary=false ; need_shift=true ;;
         D) debug_build="bash" ; need_shift=true ;;
+        j) jenkins_build=true ; need_shift=true ;;
+        k) keep_builds=true ; need_shift=true ;;
 # The other options will get passed to ps-source-builder so we must not shift them
         b|t) ((OTHEROPT+=2)) ;;
-        k|s|u) ((OTHEROPT+=1)) ;;
+        s|u) ((OTHEROPT+=1)) ;;
         h)
             show_help >&2
             exit 1 ;;
@@ -98,6 +104,21 @@ else
     useproxy=without
 fi
 
+# Are we running in Jenkins?
+if $jenkins_build ; then
+    docker_exec_param="-T"
+    echo "We're building in Jenkins with docker exec parameters: $docker_exec_param"
+else
+    docker_exec_param=""
+fi
+
+# Do we keep previous builds in local repo?
+if $keep_builds ; then
+    ps_build_param="-k"
+else
+    ps_build_param=""
+fi
+
 # Initialise
 LOGS_PREFIX="logs/binary_build"
 mkdir -p ${LOGS_PREFIX%%/*}
@@ -127,10 +148,10 @@ fi
 # TODO: deb_build should be running on the main Docker host ARCH, which might not always be amd64
 ARCH=linux/amd64 docker compose up -d deb_build $CONTAINERS
 
-if ${source_and_binary} ; then
+if $source_and_binary ; then
     # Build source package and feed all the parameters to ps-builder
     echo -e "\n\033[1m===== Building source package in source-build container =====\033[0m"
-    ARCH=linux/amd64 docker compose exec -T --user psbuild -e package=$package deb_build /usr/local/bin/ps-source-builder $*
+    ARCH=linux/amd64 docker compose exec $docker_exec_param --user psbuild -e package=$package deb_build /usr/local/bin/ps-source-builder $ps_build_param $*
     # TODO: how to actually stop?
     [ $? -eq 0 ] || exit 1
 else
@@ -144,7 +165,7 @@ for ARCH in ${ARCHES[@]}; do
     echo -e "\n===== Building \033[1mbinary package\033[0m on \033[1m$ARCH.$OSimage\033[0m in \033[1m$LARCH-build\033[0m container ====="
     [ -n "$debug_build" ] && echo -e "\033[1;33m -D : We will run a debug binary build, i.e. call $debug_build.\033[0m\n"
     # TODO: can we run all builds in parallel?
-    docker compose exec -T --user psbuild -e package=$package ${LARCH}_build /usr/local/bin/ps-binary-builder $GITREPO $debug_build
+    docker compose exec $docker_exec_param --user psbuild -e package=$package ${LARCH}_build /usr/local/bin/ps-binary-builder $ps_build_param $GITREPO $debug_build
 done
 
 # Shuting down
