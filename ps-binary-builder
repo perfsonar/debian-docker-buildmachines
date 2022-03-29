@@ -79,10 +79,12 @@ if [ $? -eq 0 ]; then
     echo -e "\n\033[1;32mBuild succeeded, the resulting packages will be copied to the shared volume ${BUILD_RESULTS}\033[0m\n"
     cp -afv ../!(${SRC_DIR}|${BUILD_DIR}) ${BUILD_RESULTS}
 
-    # And create a Packages file to serve as a local deb repo
-    echo -en "\nUpdating the APT local repository Packages content (in ${BUILD_RESULTS})"
-    (cd ${BUILD_RESULTS}; apt-ftparchive packages . > Packages)
-    echo "."
+    if $keep_builds ; then
+        # And create a Packages file to serve as a local deb repo
+        echo -en "\nUpdating the APT local repository Packages content (in ${BUILD_RESULTS})"
+        (cd ${BUILD_RESULTS}; apt-ftparchive packages . > Packages)
+        echo "."
+    fi
 else
     echo -e "\n\033[1;33mSomething went wrong, package not built!\033[0m\n"
     exit 1

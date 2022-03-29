@@ -7,6 +7,11 @@ declare -a ARCHES=("linux/amd64" "linux/arm64")
 declare -a OSimages=("debian:buster")
 #declare -a OSimages=("debian:stretch" "debian:buster" "ubuntu:bionic" "ubuntu:focal")
 
+# Make sure we have a repository
+if [ -z "$REPO"]; then
+    REPO="perfsonar-5.0-snapshot"
+fi
+
 ### Check current status
 docker buildx ls
 docker ps -a
@@ -22,11 +27,19 @@ for OSimage in ${OSimages[@]}; do
     done
 done
 docker system prune -f
+
+# Setup buildx for all supported architectures by installing and registering the latest qemu image
+# Should use latest tag from https://hub.docker.com/r/docker/binfmt/tags
+# This should only be needed once per Docker daemon run,
+# but it shouldn't be a problem running it everytime we run the setup
+docker run --rm --privileged docker/binfmt:a7996909642ee92942dcd6cff44b9b95f08dad64
+docker buildx ls
+docker ps -a
 docker images
 
 ### Prepare new images
 export OSimage ARCH REPO
-# Loop on all OS we want to test
+# Loop on all OS we want to build for
 for OSimage in ${OSimages[@]}; do
     # Loop on all ARCHES we want to prepare images
     for ARCH in ${ARCHES[@]}; do

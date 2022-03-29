@@ -74,6 +74,4 @@ To run Docker on Ubuntu:
  * use the [official documentation](https://docs.docker.com/engine/install/ubuntu/) for the initial Docker install
  * install [Docker Compose V2](https://docs.docker.com/compose/cli-command/#install-on-linux)
  * buildx should already be part of the latest Docker installs
- * install and register the latest qemu image running the following command:
-   * `docker run --rm --privileged docker/binfmt:a7996909642ee92942dcd6cff44b9b95f08dad64` and use the latest tag from https://hub.docker.com/r/docker/binfmt/tags
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
-# This script configures a local APT repository to use locally built packages
-# It needs to be given an argument, the absolut path to the directory where the repository exists
+# This script configures a local APT repository to use locally built packages.
+# This is mostly useful in a development setup.
+# It needs to be given an argument, the absolut path to the directory where the repository exists.
 
 if [ $# -gt 0 ]; then
     LOCAL_REPO=$1
