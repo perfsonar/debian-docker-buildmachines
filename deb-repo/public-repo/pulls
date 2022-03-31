@@ -1,0 +1,20 @@
+# List of perfSONAR distributions to be updated from upstream (our own upstream)
+
+Name: pull-perfsonar-4.1-staging
+From: perfsonar-4.1-staging
+
+Name: pull-perfsonar-4.2-staging
+From: perfsonar-4.2-staging
+
+Name: pull-perfsonar-4.3-staging
+From: perfsonar-4.3-staging
+
+Name: pull-perfsonar-4.4-staging
+From: perfsonar-4.4-staging
+
+Name: pull-perfsonar-4.5-staging
+From: perfsonar-4.5-staging
+
+Name: pull-perfsonar-5.0-staging
+From: perfsonar-5.0-staging
+

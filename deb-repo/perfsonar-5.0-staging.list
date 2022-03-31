@@ -1,0 +1,5 @@
+# perfSONAR 5.0 staging repository
+# Repository key is available at http://downloads.perfsonar.net/debian/perfsonar-staging.gpg.key
+# wget -qO - http://downloads.perfsonar.net/debian/perfsonar-staging.gpg.key | apt-key add -
+deb http://downloads.perfsonar.net/debian/ perfsonar-5.0-staging main
+deb-src http://downloads.perfsonar.net/debian/ perfsonar-5.0-staging main

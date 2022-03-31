@@ -1,0 +1,62 @@
+# List of perfSONAR distributions to be updated from upstream (our own upstream)
+
+Name: jenkins-perfsonar-4.1-snapshot
+Method: http://ps-deb-repo.qalab.geant.net/repo-from-jenkins
+Suite: perfsonar-4.1-snapshot
+VerifyRelease: 1C8650438968F5F6
+
+Name: jenkins-perfsonar-4.1-staging
+Method: http://ps-deb-repo.qalab.geant.net/repo-from-jenkins
+Suite: perfsonar-4.1-staging
+VerifyRelease: 1C8650438968F5F6
+
+Name: jenkins-perfsonar-4.2-snapshot
+Method: http://ps-deb-repo.qalab.geant.net/repo-from-jenkins
+Suite: perfsonar-4.2-snapshot
+VerifyRelease: 1C8650438968F5F6
+
+Name: jenkins-perfsonar-4.2-staging
+Method: http://ps-deb-repo.qalab.geant.net/repo-from-jenkins
+Suite: perfsonar-4.2-staging
+VerifyRelease: 1C8650438968F5F6
+
+Name: jenkins-perfsonar-4.3-snapshot
+Method: http://ps-deb-repo.qalab.geant.net/repo-from-jenkins
+Suite: perfsonar-4.3-snapshot
+VerifyRelease: 1C8650438968F5F6
+
+Name: jenkins-perfsonar-4.3-staging
+Method: http://ps-deb-repo.qalab.geant.net/repo-from-jenkins
+Suite: perfsonar-4.3-staging
+VerifyRelease: 1C8650438968F5F6
+
+Name: jenkins-perfsonar-4.4-snapshot
+Method: http://ps-deb-repo.qalab.geant.net/repo-from-jenkins
+Suite: perfsonar-4.4-snapshot
+VerifyRelease: 1C8650438968F5F6
+
+Name: jenkins-perfsonar-4.4-staging
+Method: http://ps-deb-repo.qalab.geant.net/repo-from-jenkins
+Suite: perfsonar-4.4-staging
+VerifyRelease: 1C8650438968F5F6
+
+Name: jenkins-perfsonar-4.5-snapshot
+Method: http://ps-deb-repo.qalab.geant.net/repo-from-jenkins
+Suite: perfsonar-4.5-snapshot
+VerifyRelease: 1C8650438968F5F6
+
+Name: jenkins-perfsonar-4.5-staging
+Method: http://ps-deb-repo.qalab.geant.net/repo-from-jenkins
+Suite: perfsonar-4.5-staging
+VerifyRelease: 1C8650438968F5F6
+
+Name: jenkins-perfsonar-5.0-snapshot
+Method: http://ps-deb-repo.qalab.geant.net/repo-from-jenkins
+Suite: perfsonar-5.0-snapshot
+VerifyRelease: 1C8650438968F5F6
+
+Name: jenkins-perfsonar-5.0-staging
+Method: http://ps-deb-repo.qalab.geant.net/repo-from-jenkins
+Suite: perfsonar-5.0-staging
+VerifyRelease: 1C8650438968F5F6
+

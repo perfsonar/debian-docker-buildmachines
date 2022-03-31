@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# This script creates a repository with multiple distributions to keep perfSONAR packages.
+# It is indempotent and can be run on an already existing and setup repository.
+#
+# Before running this script, you need to make sure the following is done:
+# - the private GPG key needs to be available for the jenkins account
+# - the reprepro tool need to be installed
+# - the $REPREPRO_BASE_DIR must exist and be writable by the jenkins account
+
+# Defaults
+export REPREPRO_BASE_DIR=/var/local/repo
+
+# Copy needed file to their location
+mkdir -p $REPREPRO_BASE_DIR/conf
+cp build-repo/distributions $REPREPRO_BASE_DIR/conf/
+
+# Export the repository
+reprepro export
+

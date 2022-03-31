@@ -1,0 +1,228 @@
+# List of all distributions present in our repository
+# Codename: needs to be before the Suite: and Architectures: fields.
+
+Origin: perfSONAR
+Label: perfsonar.net
+Codename: perfsonar-wheezy-3.5
+Version: 3.5
+Description: perfSONAR Debian Wheezy repository for the 3.5 release
+Architectures: amd64 i386 armel armhf source
+Components: main
+Tracking: minimal
+SignWith: 6B65C550
+
+Origin: perfSONAR
+Label: perfsonar.net
+Codename: perfsonar-wheezy-4.0
+Version: 4.0
+Suite: perfsonar-wheezy-release
+Description: perfSONAR Debian Wheezy repository for the 4.0 release
+Architectures: amd64 i386 armel armhf source
+Components: main
+Tracking: minimal
+SignWith: 6B65C550
+
+Origin: perfSONAR
+Label: perfsonar.net
+Codename: perfsonar-jessie-3.5
+Version: 3.5
+Description: perfSONAR Debian Jessie repository for the 3.5 release
+Architectures: amd64 i386 armel armhf arm64 source
+Components: main
+Tracking: minimal
+SignWith: 6B65C550
+
+Origin: perfSONAR
+Label: perfsonar.net
+Codename: perfsonar-jessie-4.0
+Version: 4.0
+Description: perfSONAR Debian Jessie repository for the 4.0 release
+Architectures: amd64 i386 armel armhf arm64 source
+Components: main
+Tracking: minimal
+SignWith: 6B65C550
+
+Origin: perfSONAR
+Label: perfsonar.net
+Codename: perfsonar-4.1
+Version: 4.1
+Description: perfSONAR Debian/Ubuntu repository for the 4.1 release
+Architectures: amd64 i386 armel armhf arm64 source
+Components: main
+Tracking: minimal
+SignWith: 6B65C550
+Pull: pull-perfsonar-4.1-staging
+
+Origin: perfSONAR
+Label: perfsonar.net
+Codename: perfsonar-4.2
+Version: 4.2
+Description: perfSONAR Debian/Ubuntu repository for the 4.2 release
+Architectures: amd64 i386 armel armhf arm64 ppc64el source
+Components: main
+Tracking: minimal
+SignWith: 6B65C550
+Pull: pull-perfsonar-4.2-staging
+
+Origin: perfSONAR
+Label: perfsonar.net
+Codename: perfsonar-4.3
+Version: 4.3
+Description: perfSONAR Debian/Ubuntu repository for the 4.3 release
+Architectures: amd64 i386 armel armhf arm64 ppc64el source
+Components: main
+Tracking: minimal
+SignWith: 6B65C550
+Pull: pull-perfsonar-4.3-staging
+
+Origin: perfSONAR
+Label: perfsonar.net
+Codename: perfsonar-4.4
+Suite: perfsonar-release
+Version: 4.4
+Description: perfSONAR Debian/Ubuntu repository for the 4.4 release
+Architectures: amd64 i386 armel armhf arm64 ppc64el source
+Components: main
+Tracking: minimal
+SignWith: 6B65C550
+Pull: pull-perfsonar-4.4-staging
+
+Origin: perfSONAR
+Label: perfsonar.net
+Codename: perfsonar-extras
+Version: 4.1
+Description: perfSONAR Debian/Ubuntu extras repository
+Architectures: amd64 i386 armel armhf arm64 ppc64el source
+Components: main
+Tracking: minimal
+SignWith: 6B65C550
+
+Origin: perfSONAR
+Label: perfsonar.net
+Codename: perfsonar-4.1-snapshot
+Description: perfSONAR Debian repository for the 4.1-release - snapshot packages
+Architectures: amd64 i386 armel armhf source
+Components: main
+Tracking: minimal
+SignWith: 8968F5F6
+Update: jenkins-perfsonar-4.1-snapshot
+
+Origin: perfSONAR
+Label: perfsonar.net
+Codename: perfsonar-4.1-staging
+Description: perfSONAR Debian repository for the 4.1-release - staging packages
+Architectures: amd64 i386 armel armhf source
+Components: main
+Tracking: minimal
+SignWith: 8968F5F6
+Update: jenkins-perfsonar-4.1-staging
+
+Origin: perfSONAR
+Label: perfsonar.net
+Codename: perfsonar-4.2-snapshot
+Description: perfSONAR Debian repository for the 4.2 release - snapshot packages
+Architectures: amd64 i386 armel armhf arm64 ppc64el source
+Components: main
+Tracking: minimal
+SignWith: 8968F5F6
+Update: jenkins-perfsonar-4.2-snapshot
+
+Origin: perfSONAR
+Label: perfsonar.net
+Codename: perfsonar-4.2-staging
+AlsoAcceptFor: perfsonar-release
+Description: perfSONAR Debian repository for the 4.2 release - staging packages
+Architectures: amd64 i386 armel armhf arm64 ppc64el source
+Components: main
+Tracking: minimal
+SignWith: 8968F5F6
+Update: jenkins-perfsonar-4.2-staging
+
+Origin: perfSONAR
+Label: perfsonar.net
+Codename: perfsonar-4.3-snapshot
+Description: perfSONAR Debian repository for the 4.3 release - snapshot packages
+Architectures: amd64 i386 armel armhf arm64 ppc64el source
+Components: main
+Tracking: minimal
+SignWith: 8968F5F6
+Update: jenkins-perfsonar-4.3-snapshot
+
+Origin: perfSONAR
+Label: perfsonar.net
+Codename: perfsonar-4.3-staging
+AlsoAcceptFor: perfsonar-release
+Description: perfSONAR Debian repository for the 4.3 release - staging packages
+Architectures: amd64 i386 armel armhf arm64 ppc64el source
+Components: main
+Tracking: minimal
+SignWith: 8968F5F6
+Update: jenkins-perfsonar-4.3-staging
+
+Origin: perfSONAR
+Label: perfsonar.net
+Codename: perfsonar-4.4-snapshot
+Suite: perfsonar-patch-snapshot
+Description: perfSONAR Debian repository for the 4.4 release - snapshot packages
+Architectures: amd64 i386 armel armhf arm64 ppc64el source
+Components: main
+Tracking: minimal
+SignWith: 8968F5F6
+Update: jenkins-perfsonar-4.4-snapshot
+
+Origin: perfSONAR
+Label: perfsonar.net
+Codename: perfsonar-4.4-staging
+Suite: perfsonar-patch-staging
+AlsoAcceptFor: perfsonar-release
+Description: perfSONAR Debian repository for the 4.4 release - staging packages
+Architectures: amd64 i386 armel armhf arm64 ppc64el source
+Components: main
+Tracking: minimal
+SignWith: 8968F5F6
+Update: jenkins-perfsonar-4.4-staging
+
+Origin: perfSONAR
+Label: perfsonar.net
+Codename: perfsonar-4.5-snapshot
+Description: perfSONAR Debian repository for the 4.5 release - snapshot packages
+Architectures: amd64 i386 armel armhf arm64 ppc64el source
+Components: main
+Tracking: minimal
+SignWith: 8968F5F6
+Update: jenkins-perfsonar-4.5-snapshot
+
+Origin: perfSONAR
+Label: perfsonar.net
+Codename: perfsonar-4.5-staging
+AlsoAcceptFor: perfsonar-release
+Description: perfSONAR Debian repository for the 4.5 release - staging packages
+Architectures: amd64 i386 armel armhf arm64 ppc64el source
+Components: main
+Tracking: minimal
+SignWith: 8968F5F6
+Update: jenkins-perfsonar-4.5-staging
+
+Origin: perfSONAR
+Label: perfsonar.net
+Codename: perfsonar-5.0-snapshot
+Suite: perfsonar-minor-snapshot
+Description: perfSONAR Debian repository for the 5.0 release - snapshot packages
+Architectures: amd64 i386 armel armhf arm64 ppc64el source
+Components: main
+Tracking: minimal
+SignWith: 8968F5F6
+Update: jenkins-perfsonar-5.0-snapshot
+
+Origin: perfSONAR
+Label: perfsonar.net
+Codename: perfsonar-5.0-staging
+Suite: perfsonar-minor-staging
+AlsoAcceptFor: perfsonar-release
+Description: perfSONAR Debian repository for the 5.0 release - staging packages
+Architectures: amd64 i386 armel armhf arm64 ppc64el source
+Components: main
+Tracking: minimal
+SignWith: 8968F5F6
+Update: jenkins-perfsonar-5.0-staging
+
