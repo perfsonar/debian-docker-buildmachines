@@ -86,7 +86,7 @@ fi
 
 # Which pS repo are we building for?
 # TODO: when a tag is given, we should build from staging
-REPO=`awk '/debian-branch / {gsub("\.[0-9]+$","",$3); print "perfsonar-"$3"-snapshot"}' $GBPCONF`
+REPO=`awk '/debian-branch / {gsub(".[0-9]+$","",$3); print "perfsonar-"$3"-snapshot"}' $GBPCONF`
 
 # Which OS are we building on?
 OSimage=`awk '/ DIST=/ {gsub("DIST=","",$3); print $3}' $GBPCONF`

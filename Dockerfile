@@ -10,6 +10,7 @@ ARG ARCH=linux/amd64
 FROM --platform=${ARCH} ${OSimage} AS pre-base
 
 # Some sane defaults
+ENV container=docker
 ENV LC_ALL=C
 ENV DEBIAN_FRONTEND=noninteractive
 
