@@ -31,17 +31,12 @@ show_help() {
 EOF
 }
 
-# Defaults
-#declare -a ARCHES=("linux/amd64")
+# By default, the setup is to build packages for the AMD64 and ARM64 architectures
+# If you want to build for different ones, you should call the scripts with the ARCHES
+# variable set similarily to (here for all valid and supported architectures):
+# ARCHES='linux/amd64 linux/arm64 linux/arm/v7 linux/ppc64le' ./build-in-docker
 declare -a ARCHES=("linux/amd64" "linux/arm64")
-#declare -a ARCHES=("linux/amd64" "linux/ppc64le")
-# Valid values for ARCH:
-# linux/amd64
-# linux/arm64
-# linux/arm/v7
-# linux/arm/v5
-# linux/i386
-# linux/ppc64le
+# Defaults
 build_docker_images=true
 source_and_binary=true
 need_shift=false

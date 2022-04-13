@@ -2,13 +2,18 @@
 # This script sets up all the Docker images needed to build perfSONAR packages
 # for one given perfSONAR repository ($REPO)
 
-declare -a ARCHES=("linux/amd64" "linux/arm64")
-#declare -a ARCHES=("linux/amd64" "linux/arm64" "linux/arm/v7" "linux/arm/v5" "linux/i386" "linux/ppc64le")
+# By default, the setup is to build packages for the AMD64 and ARM64 architectures
+# If you want to build for different ones, you should call the scripts with the ARCHES
+# variable set similarily to (here for all valid and supported architectures):
+# ARCHES='linux/amd64 linux/arm64 linux/arm/v7 linux/ppc64le' ./setup-docker 
+if [ -z "$ARCHES" ]; then
+    declare -a ARCHES=("linux/amd64" "linux/arm64")
+fi
 declare -a OSimages=("debian:buster")
 #declare -a OSimages=("debian:stretch" "debian:buster" "ubuntu:bionic" "ubuntu:focal")
 
 # Make sure we have a repository
-if [ -z "$REPO"]; then
+if [ -z "$REPO" ]; then
     REPO="perfsonar-5.0-snapshot"
 fi
 
@@ -48,5 +53,7 @@ for OSimage in ${OSimages[@]}; do
     done
 done
 
+# Display result
+docker images
 echo "All images built!"
 
