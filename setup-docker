@@ -2,58 +2,85 @@
 # This script sets up all the Docker images needed to build perfSONAR packages
 # for one given perfSONAR repository ($REPO)
 
-# By default, the setup is to build packages for the AMD64 and ARM64 architectures
-# If you want to build for different ones, you should call the scripts with the ARCHES
-# variable set similarily to (here for all valid and supported architectures):
-# ARCHES='linux/amd64 linux/arm64 linux/arm/v7 linux/ppc64le' ./setup-docker 
-if [ -z "$ARCHES" ]; then
-    declare -a ARCHES=("linux/amd64" "linux/arm64")
-fi
+# By default, the setup is to build packages for the AMD64 architecture only
+# This uses the single_build target from docker-bake.hcl
+# If you want to build for all architectures, you can pass 'full_build' as arg
+# Or 'dual_build' to build only for AMD64 and ARM64
+# See docker-bake.hcl for details and other bake targets
+
+# We use debian:buster as the build OS
 declare -a OSimages=("debian:buster")
-#declare -a OSimages=("debian:stretch" "debian:buster" "ubuntu:bionic" "ubuntu:focal")
+#declare -a OSimages=("debian:buster" "ubuntu:bionic" "ubuntu:focal")
 
 # Make sure we have a repository
 if [ -z "$REPO" ]; then
     REPO="perfsonar-5.0-snapshot"
 fi
 
-### Check current status
-docker buildx ls
-docker ps -a
-docker images
+# Check what build we should do
+if [ $# -gt 0 ]; then
+    build_type=$1
+else
+    build_type="single_build"
+fi
 
-### Cleanup previous images and cache
-echo "Removing previous images for $REPO and clearing cache."
-# Loop on all OS we want to test
-for OSimage in ${OSimages[@]}; do
-    # Loop on all ARCHES we want to prepare images
-    for ARCH in ${ARCHES[@]}; do
-        docker rmi build.$REPO.$ARCH.$OSimage
-    done
-done
+### Check current status
+echo -e "\033[1mCurrent Docker setup is as follows:\033[0m"
+docker buildx ls
+echo
+docker ps -a
+echo
+docker images
+echo
+
+### Clear Docker caches
+echo -e "\033[1mLet's clear caches\033[0m"
+docker builder prune -af
+echo
 docker system prune -f
+echo
+
+### Create  and setup the buildx instance for the multi arch builds
+echo -e "\033[1mMake sure docker buildx is ready for multi arch builds\033[0m"
+docker buildx create --driver docker-container --name perfbuild --use
 
 # Setup buildx for all supported architectures by installing and registering the latest qemu image
 # It uses the images from https://github.com/multiarch/qemu-user-static
+# Also see https://medium.com/@artur.klauser/building-multi-architecture-docker-images-with-buildx-27d80f7e2408 for more context
 # This should only be needed once per Docker daemon run,
 # but it shouldn't be a problem running it everytime we run the setup
 docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-docker buildx ls
-docker ps -a
-docker images
+echo
 
-### Prepare new images
-export OSimage ARCH REPO
-# Loop on all OS we want to build for
+### Verify new status
+echo -e "\033[1mNew Docker setup is as follows:\033[0m"
+docker buildx ls
+echo
+docker ps -a
+echo
+docker images
+echo
+
+### Build the new images on the different platforms
+export OSimage REPO
+# Loop on all OS we want to have build machines
 for OSimage in ${OSimages[@]}; do
-    # Loop on all ARCHES we want to prepare images
-    for ARCH in ${ARCHES[@]}; do
-        echo "Building OS: $OSimage.$ARCH - pS repo: $REPO"
-        docker buildx bake --load deb_build
+    echo -e "\033[1mNow let's build Docker images for \033[1;32m$OSimage \033[1;37m- target: \033[1;32m$build_type\033[0m"
+    # Prepare and push the images
+    docker buildx bake $build_type
+    # Once images are pushed, we need to modify the docker-compose.yml file with the new SHA256
+    for LINE in `(docker buildx imagetools inspect "ntw0n/psbuild.$REPO.$OSimage"; echo) | perl -nle '$sha=$1 if /$ENV{OSimage}\@sha256:([a-z0-9]*)/; print "$1:$sha" if /(linux\/(amd64|arm64|arm\/v7|ppc64le))/;'`; do
+        arch=${LINE%:*}
+        arch="${arch//\//\\/}"
+        sha=${LINE#*:}
+        export arch sha
+        perl -nli -e '$sha = $ENV{sha} if /$ENV{arch}/; if (/\/psbuild\..*\@sha256.*/ && $sha ne "") {print "    image: docker.io/ntw0n/psbuild.\$REPO.\$OSimage\@sha256:$sha"; $sha = "";} else {print;}' docker-compose.yml
     done
+    echo
 done
 
 # Display result
 docker images
-echo "All images built!"
+echo
+echo -e "\033[1mAll images built and pushed!\033[0m"
 

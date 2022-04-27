@@ -6,8 +6,10 @@ ARG useproxy=without
 # TODO: move to pS provided base OS image
 # OS image to use as a base
 ARG OSimage=debian:buster
-ARG ARCH=linux/amd64
-FROM --platform=${ARCH} ${OSimage} AS pre-base
+FROM ${OSimage} AS pre-base
+
+# Custom cache invalidation
+ARG CACHEBUST=1
 
 # Some sane defaults
 ENV container=docker
@@ -56,7 +58,7 @@ RUN rm -f /lib/systemd/system/multi-user.target.wants/* \
     /lib/systemd/system/systemd-update-utmp*
 
 # Shared volume needed for systemd
-VOLUME /sys/fs/cgroup
+#VOLUME /sys/fs/cgroup
 
 # Work around a Debian/Ubuntu Docker issue
 # https://stackoverflow.com/questions/46247032/how-to-solve-invoke-rc-d-policy-rc-d-denied-execution-of-start-when-building

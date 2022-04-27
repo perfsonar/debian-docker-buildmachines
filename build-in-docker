@@ -31,11 +31,13 @@ show_help() {
 EOF
 }
 
-# By default, the setup is to build packages for the AMD64 and ARM64 architectures
+# By default, the setup is to build packages for the AMD64 architecture
 # If you want to build for different ones, you should call the scripts with the ARCHES
 # variable set similarily to (here for all valid and supported architectures):
 # ARCHES='linux/amd64 linux/arm64 linux/arm/v7 linux/ppc64le' ./build-in-docker
-declare -a ARCHES=("linux/amd64" "linux/arm64")
+if [ -z "$ARCHES" ]; then
+    declare -a ARCHES=("linux/amd64")
+fi
 # Defaults
 build_docker_images=true
 source_and_binary=true
@@ -124,29 +126,16 @@ for ARCH in ${ARCHES[@]}; do
     LARCH=${ARCH#*\/}
     CONTAINERS+=${LARCH/\/}"_build "
 done
-# ARCH need to be set before calling docker compose
-ARCH=linux/amd64
 docker compose down
-
-if $build_docker_images ; then
-    # Loop on all ARCHES we want to build for to prepare images
-    for ARCH in ${ARCHES[@]}; do
-        echo -e "\n\033[1;35m============\033[0;35m\nBuilding OS: $OSimage.$ARCH - pS repo: $REPO\n\033[1m============\033[0m\n"
-        # Build the images, sequentially so that caching is effective
-        docker buildx bake --load deb_build
-    done
-else
-    echo -e "\n\033[1;33m -d\033[0;33m : I'm not building Docker images but will use the ones already existing in the local registry.\033[0m\n"
-fi
+echo $REPO
 
 # Launch all containers, with deb_build running on amd64
-# TODO: deb_build should be running on the main Docker host ARCH, which might not always be amd64
-ARCH=linux/amd64 docker compose up -d deb_build $CONTAINERS
+docker compose up -d deb_build $CONTAINERS
 
 if $source_and_binary ; then
     # Build source package and feed all the parameters to ps-builder
     echo -e "\n\033[1m===== Building source package in source-build container =====\033[0m"
-    ARCH=linux/amd64 docker compose exec $docker_exec_param --user psbuild -e package=$package deb_build /usr/local/bin/ps-source-builder $ps_build_param $*
+    docker compose exec $docker_exec_param --user psbuild -e package=$package deb_build /usr/local/bin/ps-source-builder $ps_build_param $*
     # TODO: how to actually stop?
     [ $? -eq 0 ] || exit 1
 else

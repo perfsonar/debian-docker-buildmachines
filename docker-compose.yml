@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.9'
 
 ###
 # Some repeated defaults:
@@ -8,7 +8,6 @@ version: '3.8'
 x-build-args:
   &default-build-args
   OSimage: "$OSimage"
-  ARCH: "$ARCH"
   REPO: "$REPO"
   useproxy: "${useproxy:-without}"
   proxy: "${proxy:-}"
@@ -16,11 +15,11 @@ x-build-args:
 x-tmpfs:
   &default-tmpfs
   - /run
+  - /run/lock
   - /tmp
 
 x-volumes:
   &default-volumes
-  - /sys/fs/cgroup:/sys/fs/cgroup:ro
   - ..:/mnt/build
 
 ###
@@ -30,13 +29,8 @@ x-volumes:
 services:
   deb_build:
     container_name: source-build
-    build:
-      context: .
-      target: build-image
-      args: *default-build-args
-    image: build.$REPO.$ARCH.$OSimage
-      # Might be useful to publish multiarch image on dockerHub
-      #image: docker.io/library/ntw0n/build.$REPO/$OSimage.$ARCH
+    platform: "linux/amd64"
+    image: docker.io/ntw0n/psbuild.$REPO.$OSimage@sha256:027cdabbd33765a0410ce99a9b9b23402cf85c63b180962c3f0b4c47299381e3
     privileged: true
     tmpfs: *default-tmpfs
     volumes: *default-volumes
@@ -46,35 +40,32 @@ services:
 ###
   amd64_build:
     container_name: amd64-build
-    image: build.$REPO.linux/amd64.$OSimage
+    platform: "linux/amd64"
+    image: docker.io/ntw0n/psbuild.$REPO.$OSimage@sha256:027cdabbd33765a0410ce99a9b9b23402cf85c63b180962c3f0b4c47299381e3
     privileged: true
     tmpfs: *default-tmpfs
     volumes: *default-volumes
 
   arm64_build:
     container_name: arm64-build
-    image: build.$REPO.linux/arm64.$OSimage
+    platform: "linux/arm64"
+    image: docker.io/ntw0n/psbuild.$REPO.$OSimage@sha256:1fd232e38fd5e70974063c6d401a9059e3ba04ef5fc019696b964e154ef5aed8
     privileged: true
     tmpfs: *default-tmpfs
     volumes: *default-volumes
 
   armv7_build:
     container_name: armv7-build
-    image: build.$REPO.linux/arm/v7.$OSimage
-    privileged: true
-    tmpfs: *default-tmpfs
-    volumes: *default-volumes
-
-  386_build:
-    container_name: 386-build
-    image: build.$REPO.linux/386.$OSimage
+    platform: "linux/arm/v7"
+    image: docker.io/ntw0n/psbuild.$REPO.$OSimage@sha256:ebfa5fa4921fa1dbdb1ed3e4ec33f17169b1283bf29c1d9864033cbd191b2f08
     privileged: true
     tmpfs: *default-tmpfs
     volumes: *default-volumes
 
   ppc64le_build:
     container_name: ppc64le-build
-    image: build.$REPO.linux/ppc64le.$OSimage
+    platform: "linux/ppc64le"
+    image: docker.io/ntw0n/psbuild.$REPO.$OSimage@sha256:ef56ab9758e9a85e230785376aeb05650738248213e55aa8ce48471f072e33f0
     privileged: true
     tmpfs: *default-tmpfs
     volumes: *default-volumes
@@ -88,44 +79,40 @@ services:
       context: .
       target: test-image
       args: *default-build-args
-    image: install.$REPO.$ARCH.$OSimage
-      # Might be useful to publish multiarch image on dockerHub
-      #image: docker.io/library/ntw0n/build.$REPO/$OSimage.$ARCH
+    platform: "linux/amd64"
+    image: docker.io/ntw0n/install.$REPO.$OSimage
     privileged: true
     tmpfs: *default-tmpfs
     volumes: *default-volumes
 
   amd64_test:
     container_name: amd64-test
-    image: install.$REPO.linux/amd64.$OSimage
+    platform: "linux/amd64"
+    image: docker.io/ntw0n/install.$REPO.$OSimage
     privileged: true
     tmpfs: *default-tmpfs
     volumes: *default-volumes
 
   arm64_test:
     container_name: arm64-test
-    image: install.$REPO.linux/arm64.$OSimage
+    platform: "linux/arm64"
+    image: docker.io/ntw0n/install.$REPO.$OSimage
     privileged: true
     tmpfs: *default-tmpfs
     volumes: *default-volumes
 
   armv7_test:
     container_name: armv7-test
-    image: install.$REPO.linux/arm/v7.$OSimage
-    privileged: true
-    tmpfs: *default-tmpfs
-    volumes: *default-volumes
-
-  386_test:
-    container_name: 386-test
-    image: install.$REPO.linux/386.$OSimage
+    platform: "linux/arm/v7"
+    image: docker.io/ntw0n/install.$REPO.$OSimage
     privileged: true
     tmpfs: *default-tmpfs
     volumes: *default-volumes
 
   ppc64le_test:
     container_name: ppc64le-test
-    image: install.$REPO.linux/ppc64le.$OSimage
+    platform: "linux/ppc64le"
+    image: docker.io/ntw0n/install.$REPO.$OSimage
     privileged: true
     tmpfs: *default-tmpfs
     volumes: *default-volumes
