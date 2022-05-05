@@ -41,6 +41,7 @@ docker system prune -f
 echo
 
 ### Create  and setup the buildx instance for the multi arch builds
+# See https://docs.docker.com/desktop/multi-arch/
 echo -e "\033[1mMake sure docker buildx is ready for multi arch builds\033[0m"
 docker buildx create --driver docker-container --name perfbuild --use
 

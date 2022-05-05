@@ -7,9 +7,16 @@ shopt -s extglob
 # We need to look in both debian/ and */debian/ directories because of the difference
 # between upstream and Debian native packages
 
-# First get $DIST from gbp.conf
+# If an argument is given, we move to that directory first.
+mycwd=`pwd`
+if [ -d "$1" ]; then
+    cd $1
+fi
+pwd
 ls -la
 echo
+
+# First get $DIST from gbp.conf
 `tar -JxOf !(*.orig).tar.xz --wildcards debian/gbp.conf '*/debian/gbp.conf' 2>/dev/null | awk '/DIST=/ {print "export "$3} /^debian-branch/ {print "BRANCH="$3}'`
 if [[ "$DIST" = "" ]]; then
     echo "No distribution field (DIST=) found in the source package (in gbp.conf), are you sure it is a Debian package?"
@@ -45,5 +52,6 @@ else
 fi
 
 # Conclusion
+cd $mycwd
 echo "I've found $PACKAGE_NAME version $VERSION to be built for $BUILD_ARCH arch(es) on $DIST and to be released in the $RELEASE repo."
 
