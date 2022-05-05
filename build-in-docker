@@ -143,6 +143,8 @@ else
 fi
 
 # Build binary package for all architectures
+# TODO: Need to improve on that and run containers in parallel, like for the Docker build
+# If not possible, then need to launch all containers and check when each build finishes to collect result code
 for ARCH in ${ARCHES[@]}; do
     LARCH=${ARCH#*\/}
     LARCH=${LARCH/\/}

@@ -3,16 +3,21 @@
 
 # Defaults
 export REPREPRO_BASE_DIR=/var/local/repo
-BUILD_RESULTS='/mnt/build/build_results'
+# Build results should be in a directory just one level above
+BUILD_RESULTS=`pwd`'/../build_results'
 
 # Get $BUILD_ARCH, $DIST and $RELEASE from the content of the source package
-./check-release-repo.sh ${BUILD_RESULTS}
+. ./check-release-repo.sh ${BUILD_RESULTS}
 [ $? -eq 0 ] || exit 1
 
 # Add resulting packages to local repository
 reprepro --waitforlock 12 -v includedsc ${RELEASE} ${BUILD_RESULTS}/*.dsc
-reprepro --waitforlock 12 -v include ${RELEASE} ${BUILD_RESULTS}/*.changes
+for c in `ls ${BUILD_RESULTS}/*_[^s][a-z]*.changes`; do
+    reprepro --waitforlock 12 -v include ${RELEASE} $c
+done
 
 # Run Lintian on built package
-lintian --suppress-tags bad-distribution-in-changes-file ${BUILD_RESULTS}/*.changes
+for c in `ls ${BUILD_RESULTS}/*_*.changes`; do
+    lintian --suppress-tags bad-distribution-in-changes-file $c
+done
 
