@@ -20,9 +20,9 @@ for DIST in 5.0; do
         # Check the current content of the repository
         REPO="perfsonar-${DIST}-${RELEASE}"
         echo "Listing content of the local repository ${REPO}"
-        repository_checker --list-repos ${REPO}
+        reprepro list ${REPO}
         echo -n "Total number of packages in ${REPO}: "
-        repository_checker --list-repos ${REPO} | wc -l
+        reprepro list ${REPO} | wc -l
         echo "––––––––––––––––––––––––––––––"
     done
 done
