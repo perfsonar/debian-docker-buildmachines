@@ -115,6 +115,7 @@ fi
 
 cd ..
 # Build the source package
+apt update
 ${REPO_LOC}/debian-docker-buildmachines/build-source-package.sh
 [ $? -eq 0 ] || exit 1
 

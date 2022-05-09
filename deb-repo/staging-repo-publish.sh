@@ -29,7 +29,7 @@ done
 
 echo
 echo "Push the repository to the public repo server, in a staging space, deleting extraneous files"
-rsync -av --delete $REPREPRO_BASE_DIR jenkins@ps-deb-repo.qalab.geant.net:/var/www/html/repo-from-d10/
+rsync -av --delete $REPREPRO_BASE_DIR/ jenkins@ps-deb-repo.qalab.geant.net:/var/www/html/repo-from-d10/
 # Update the staging repo description page
 ssh jenkins@ps-deb-repo.qalab.geant.net "~/deb-repo-info.pl -repo /var/www/html/repo-from-d10 -html > /var/www/html/repo-from-d10/index.html"
 echo
