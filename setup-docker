@@ -79,9 +79,12 @@ for OSimage in ${OSimages[@]}; do
     done
     echo
 done
+git commit -m "Updating Docker multiarch image sha256" docker-compose.yml
 
 # Display result
 docker images
 echo
 echo -e "\033[1mAll images built and pushed!\033[0m"
+echo "If new images have been generated and pushed to Docker Hub, you'll also need to push the docker-compose.yml file change to the GitHub repo."
+git status
 

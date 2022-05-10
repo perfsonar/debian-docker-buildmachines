@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+#
+# This script can be used to update SHA256 references in the docker-compose.yml
+# file.  Changes will then need to be pushed to GitHub to be effective.
+
+# We use debian:buster as the build OS
+declare -a OSimages=("debian:buster")
+#declare -a OSimages=("debian:buster" "ubuntu:bionic" "ubuntu:focal")
+
+# Make sure we have a repository
+if [ -z "$REPO" ]; then
+    REPO="perfsonar-5.0-snapshot"
+fi
+
+export OSimage REPO
+for OSimage in ${OSimages[@]}; do
+    for LINE in `(docker buildx imagetools inspect "ntw0n/psbuild.$REPO.$OSimage"; echo) | perl -nle '$sha=$1 if /$ENV{OSimage}\@sha256:([a-z0-9]*)/; print "$1:$sha" if /(linux\/(amd64|arm64|arm\/v7|ppc64le))/;'`; do
+        arch=${LINE%:*}
+        arch="${arch//\//\\/}"
+        sha=${LINE#*:}
+        export arch sha
+        perl -nli -e '$sha = $ENV{sha} if /$ENV{arch}/; if (/\/psbuild\..*\@sha256.*/ && $sha ne "") {print "    image: docker.io/ntw0n/psbuild.\$REPO.\$OSimage\@sha256:$sha"; $sha = "";} else {print;}' docker-compose.yml
+    done
+    echo
+done
+git commit -m "Updating Docker multiarch image sha256" docker-compose.yml
+
