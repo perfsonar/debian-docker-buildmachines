@@ -3,7 +3,7 @@
 # Usage info
 show_help() {
     cat << EOF
-    Usage: ${0##*/} -dBDjk [args_as_for_ps-source-builder] [gitrepo]
+    Usage: ${0##*/} -BDjk [args_as_for_ps-source-builder] [gitrepo]
     This script will build docker images and launch a git repo build in a container
     Requirements:
         - Needs to be in a directory at the same level as the gitrepo to be built
@@ -11,7 +11,6 @@ show_help() {
         - Functionnal docker buildx setup
 
     Arguments understood:
-        -d don't rebuild Docker images but use locally existing one
         -B don't rebuild source package but use previously build one
         -D debug build, will get you into a shell instead of doing the build
         -j build in Jenkins, use -T switch when calling docker exec
@@ -39,7 +38,6 @@ if [ -z "$ARCHES" ]; then
     declare -a ARCHES=("linux/amd64")
 fi
 # Defaults
-build_docker_images=true
 source_and_binary=true
 need_shift=false
 jenkins_build=false
@@ -47,9 +45,8 @@ keep_builds=false
 OTHEROPT=1
 
 # Parsing options
-while getopts "dBDhjb:t:ksu" OPT; do
+while getopts "BDhjb:t:ksu" OPT; do
     case $OPT in
-        d) build_docker_images=false ; need_shift=true ;;
         B) source_and_binary=false ; need_shift=true ;;
         D) debug_build="bash" ; need_shift=true ;;
         j) jenkins_build=true ; need_shift=true ;;

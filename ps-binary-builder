@@ -61,7 +61,7 @@ if [ "$2" ]; then
 fi
 
 # Install build dependencies
-sudo apt update
+sudo apt-get update
 sudo mk-build-deps --install --tool 'apt-get --yes --no-install-recommends -o Debug::pkgProblemResolver=yes' --remove
 # Alternative: `apt build-dep ./`
 
