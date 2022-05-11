@@ -144,7 +144,7 @@ if [ "$pscheduler_dir_level" ]; then
                     for suffix in gz xz bz2; do
                         if [ -f ../${package}_${file_upstream_version#*:}*.orig.tar.${suffix} ]; then
                             # We just must create a new one with the snapshot version number
-                            ln ../${package}_${file_upstream_version#*:}*.orig.tar.${suffix} ../${package}_${upstream_version#*:}.orig.tar.${suffix}
+                            mv ../${package}_${file_upstream_version#*:}*.orig.tar.${suffix} ../${package}_${upstream_version#*:}.orig.tar.${suffix}
                         fi
                     done
                 else

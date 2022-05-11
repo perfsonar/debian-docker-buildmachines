@@ -75,3 +75,10 @@ To run Docker on Ubuntu:
  * install [Docker Compose V2](https://docs.docker.com/compose/cli-command/#install-on-linux)
  * buildx should already be part of the latest Docker installs
 
+### On MacOS
+Use Docker-Desktop and activate Docker Compose v2
+
+### Setup script for all platforms
+There are 2 scripts to help with the setup:
+ * setup-docker: to create the Docker images and upload them to Docker Hub, you need to make sure you have upload access to Docker Hub when running this.
+ * setup-docker-sha256: to update the docker-compose.yml file with the new images uploaded to Docker Hub, the resulting docker-compose.yml file can then be uploaded to the GitHub repository.

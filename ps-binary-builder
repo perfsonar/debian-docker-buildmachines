@@ -69,10 +69,10 @@ mk-build-deps --install --tool 'apt-get --yes --no-install-recommends -o Debug::
 # TODO: for Jenkins, we'll want signing!
 if [ `uname -m` == "x86_64" ]; then
     # Only run lintian on amd64 (automatically called from debuild)
-    debuild -rfakeroot -i -us -uc -sa -b
+    debuild -i -us -uc -sa -b
 else
     # Calling directly dpkg-buildpackage on other ARCHES so we don't run Lintian that seems to have an issue when running under QEMU
-    dpkg-buildpackage -rfakeroot -us -uc -i -sa -b
+    dpkg-buildpackage -us -uc -i -sa -b
 fi
 
 if [ $? -eq 0 ]; then
