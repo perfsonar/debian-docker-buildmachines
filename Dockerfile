@@ -79,7 +79,7 @@ RUN apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Shared volume for builds and installs (will be  referenced by the local APT repo)
+# Shared volume for builds and installs (will be referenced by the local APT repo)
 COPY ./ps-local-repo /usr/local/bin/ps-local-repo
 VOLUME /mnt/build
 
