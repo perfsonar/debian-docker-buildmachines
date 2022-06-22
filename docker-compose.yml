@@ -30,7 +30,7 @@ services:
   deb_build:
     container_name: source-build
     platform: "linux/amd64"
-    image: docker.io/ntw0n/psbuild.$REPO.$OSimage@sha256:89bf26330461ca818be3417ecc6819554ee0715948da9d29996d09a834759452
+    image: docker.io/ntw0n/psbuild.$REPO.$OSimage@sha256:f37b093d94b207d053fa8ae1c71a826ebda3bfeebc6a7c5554da4e9148440ff2
     privileged: true
     tmpfs: *default-tmpfs
     volumes: *default-volumes
@@ -41,7 +41,7 @@ services:
   amd64_build:
     container_name: amd64-build
     platform: "linux/amd64"
-    image: docker.io/ntw0n/psbuild.$REPO.$OSimage@sha256:89bf26330461ca818be3417ecc6819554ee0715948da9d29996d09a834759452
+    image: docker.io/ntw0n/psbuild.$REPO.$OSimage@sha256:f37b093d94b207d053fa8ae1c71a826ebda3bfeebc6a7c5554da4e9148440ff2
     privileged: true
     tmpfs: *default-tmpfs
     volumes: *default-volumes
@@ -49,7 +49,7 @@ services:
   arm64_build:
     container_name: arm64-build
     platform: "linux/arm64"
-    image: docker.io/ntw0n/psbuild.$REPO.$OSimage@sha256:8934e88c88ffa1b6b9974f9e7d90e135b897505918bbf78d1841c707ca519297
+    image: docker.io/ntw0n/psbuild.$REPO.$OSimage@sha256:ef9edb92a76f79ad3e3b776a3235a0a5d15b60a29d392b6d8b5b5ba6a44c2167
     privileged: true
     tmpfs: *default-tmpfs
     volumes: *default-volumes
@@ -57,7 +57,7 @@ services:
   armv7_build:
     container_name: armv7-build
     platform: "linux/arm/v7"
-    image: docker.io/ntw0n/psbuild.$REPO.$OSimage@sha256:886934bc897dfc8c5302c002351bf3c33d42dcd001cd3538723754e1a336b91b
+    image: docker.io/ntw0n/psbuild.$REPO.$OSimage@sha256:c0d374312879c7d61aa5a4d2c78c98c6254f6cc299f954875eaba9df6a9353a5
     privileged: true
     tmpfs: *default-tmpfs
     volumes: *default-volumes
@@ -65,7 +65,7 @@ services:
   ppc64le_build:
     container_name: ppc64le-build
     platform: "linux/ppc64le"
-    image: docker.io/ntw0n/psbuild.$REPO.$OSimage@sha256:e149071cedb8a3d69f810e6cbdc817c6f17b0eb871d89fca5b4f14b4c653cd3a
+    image: docker.io/ntw0n/psbuild.$REPO.$OSimage@sha256:273348716553a69cdb70a60b1435c08e88c8caff94aab4fdbfdd459b3f3f916c
     privileged: true
     tmpfs: *default-tmpfs
     volumes: *default-volumes
