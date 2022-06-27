@@ -25,7 +25,7 @@ for ARCH in ${ARCHES[@]}; do
     LARCH=${ARCH#*\/}
     LARCH=${LARCH/\/}
     # TODO: can we run all builds in parallel?
-    docker compose exec ${OS}_${LARCH} bash -c "\
+    docker compose exec -T ${OS}_${LARCH} bash -c "\
         curl http://downloads.perfsonar.net/debian/$REPO.gpg.key | apt-key add - && \
         curl -o /etc/apt/sources.list.d/$REPO.list http://downloads.perfsonar.net/debian/$REPO.list && \
         apt-get update \
@@ -33,7 +33,7 @@ for ARCH in ${ARCHES[@]}; do
 done
 
 # Make the master build with unibuild (on amd64 container)
-docker compose exec ${OS}_amd64 unibuild build
+docker compose exec -T ${OS}_amd64 unibuild build
 
 # Then loop on all packages from the unibuild/build-order file
 cd unibuild-repo
