@@ -3,8 +3,10 @@
 
 # Defaults
 export REPREPRO_BASE_DIR=/var/local/repo
-# Build results should be in a directory just one level above
-BUILD_RESULTS=`pwd`'/../build_results'
+
+# Where are the packages we need to add to repository?
+[ -z "${BUILD_RESULTS}" ] \
+    && BUILD_RESULTS=`pwd`'/../build_results'
 
 # Get $BUILD_ARCH, $DIST and $RELEASE from the content of the source package
 . ./check-release-repo.sh ${BUILD_RESULTS}
