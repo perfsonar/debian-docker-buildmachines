@@ -63,8 +63,16 @@ for p in `cat unibuild/debian-package-order`; do
             if [[ $LARCH != "amd64" ]]; then
                 echo -e "\n===== Building \033[1mbinary package ${p}\033[0m on \033[1m${ARCH}\033[0m in \033[1m${OS}_${LARCH}\033[0m container ====="
                 # TODO: can we run all builds in parallel?
-                docker compose exec -T ${OS}_${LARCH} bash -c "cd /app/unibuild-repo/$BUILD_DIR/ && mk-build-deps --install --tool 'apt-get --yes --no-install-recommends -o Debug::pkgProblemResolver=yes' --remove"
-                docker compose exec -T ${OS}_${LARCH} bash -c "cd /app/unibuild-repo/$BUILD_DIR/ && dpkg-buildpackage -us -uc -i -sa -b"
+                docker compose exec -T ${OS}_${LARCH} bash -c "\
+                    cd /app/unibuild-repo/$BUILD_DIR/ && \
+                    mk-build-deps --install --tool 'apt-get --yes --no-install-recommends -o Debug::pkgProblemResolver=yes' --remove && \
+                    dpkg-buildpackage -us -uc -i -sa -b && \
+                    MYARCH=\$(dpkg --print-architecture) && \
+                    cd .. && \
+                    pwd && \
+                    ls -la *${p}*_\${MYARCH}.deb && \
+                    find . -name \"*${p}*_\${MYARCH}.deb\" | xargs apt-get -y install \
+                    "
             fi
         done
     fi
