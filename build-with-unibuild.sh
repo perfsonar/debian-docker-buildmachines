@@ -47,6 +47,7 @@ mkdir -p $BUILD_DIR
 for p in `cat unibuild/debian-package-order`; do
     # Extract source package
     rm -rf $BUILD_DIR/*
+    echo "Extracting ${p} in ${BUILD_DIR} to see if we must build it."
     if head -1 ${p}*.dsc | grep -q '(native)' ; then
         echo "This is a Debian native package, there is no orig tarball."
         cat ${p}*.tar.xz | tar -x -C $BUILD_DIR --strip-components 1 -f -
@@ -55,12 +56,12 @@ for p in `cat unibuild/debian-package-order`; do
         cat ${p}*.debian.tar.xz | tar -x -C $BUILD_DIR -f -
     fi
 
-    if grep '^Architecture: ' $BUILD_DIR/debian/control | grep -qv 'Architecture: all'; then
-        # We need to build this package for all architectures
-        for ARCH in ${ARCHES[@]}; do
-            LARCH=${ARCH#*\/}
-            LARCH=${LARCH/\/}
-            if [[ $LARCH != "amd64" ]]; then
+    for ARCH in ${ARCHES[@]}; do
+        LARCH=${ARCH#*\/}
+        LARCH=${LARCH/\/}
+        if [[ $LARCH != "amd64" ]]; then
+            if grep '^Architecture: ' $BUILD_DIR/debian/control | grep -qv 'Architecture: all'; then
+                # We need to build this package for all architectures
                 echo -e "\n===== Building \033[1mbinary package ${p}\033[0m on \033[1m${ARCH}\033[0m in \033[1m${OS}_${LARCH}\033[0m container ====="
                 # TODO: can we run all builds in parallel?
                 docker compose exec -T ${OS}_${LARCH} bash -c "\
@@ -73,9 +74,18 @@ for p in `cat unibuild/debian-package-order`; do
                     ls -la *${p}*_\${MYARCH}.deb && \
                     find . -name \"*${p}*_\${MYARCH}.deb\" | xargs apt-get -y install \
                     "
+            else
+                echo "We don't need to build ${p} for other architectures, but we'll install it in the Docker env."
+                docker compose exec ${OS}_${LARCH} bash -c "\
+                    cd /app/unibuild-repo/ && \
+                    pwd && \
+                    ls -la *${p}*.deb && \
+                    find . -name \"*${p}*.deb\" | xargs apt-get -y install \
+                    "
             fi
-        done
-    fi
+        fi
+    done
+    echo
 done
 
 # Shutdown all containers
