@@ -10,7 +10,7 @@ export OS=d10
 # Launch all containers
 ARCHES='linux/amd64 linux/arm64 linux/armv7 linux/ppc64le'
 docker compose down
-docker volume rm app
+docker volume prune -f
 for ARCH in ${ARCHES[@]}; do
     LARCH=${ARCH#*\/}
     docker compose run -d --rm ${OS}_$LARCH
@@ -22,8 +22,8 @@ for ARCH in ${ARCHES[@]}; do
     LARCH=${LARCH/\/}
     # TODO: can we run all builds in parallel?
     docker compose exec -T ${OS}_${LARCH} bash -c "\
-        curl http://downloads.perfsonar.net/debian/$REPO.gpg.key | apt-key add - && \
-        curl -o /etc/apt/sources.list.d/$REPO.list http://downloads.perfsonar.net/debian/$REPO.list && \
+        curl -s http://downloads.perfsonar.net/debian/$REPO.gpg.key | apt-key add - && \
+        curl -s -o /etc/apt/sources.list.d/$REPO.list http://downloads.perfsonar.net/debian/$REPO.list && \
         apt-get update \
         "
 done
@@ -43,10 +43,10 @@ for p in `cat ${RESULTS_DIR}/unibuild/debian-package-order`; do
     echo "Extracting ${p} in ${BUILD_DIR} to see if we must build it."
     if head -1 ${RESULTS_DIR}/${p}*.dsc | grep -q '(native)' ; then
         echo "This is a Debian native package, there is no orig tarball."
-        cat ${RESULTS_DIR}/${p}*.tar.xz | tar -x -C $BUILD_DIR --strip-components 1 -f -
+        cat ${RESULTS_DIR}/${p}*.tar.xz | tar -Jx -C $BUILD_DIR --strip-components 1 -f -
     else
-        cat ${RESULTS_DIR}/${p}*.orig.* | tar -x -C $BUILD_DIR --strip-components 1 -f -
-        cat ${RESULTS_DIR}/${p}*.debian.tar.xz | tar -x -C $BUILD_DIR -f -
+        cat ${RESULTS_DIR}/${p}*.orig.* | tar -zx -C $BUILD_DIR --strip-components 1 -f -
+        cat ${RESULTS_DIR}/${p}*.debian.tar.xz | tar -Jx -C $BUILD_DIR -f -
     fi
 
     for ARCH in ${ARCHES[@]}; do
@@ -69,6 +69,8 @@ for p in `cat ${RESULTS_DIR}/unibuild/debian-package-order`; do
                     mv *${p}*_\${MYARCH}.* ${RESULTS_DIR} \
                     "
             else
+                # This is needed to make sure dependencies are satisfied
+                # Alternative would be to push packages to repository after each build instead of at the very end
                 echo -e "\033[1mWe don't need to build ${p} for ${ARCH}\033[0m, but we'll install it in the Docker env."
                 docker compose exec ${OS}_${LARCH} bash -c "\
                     cd ${RESULTS_DIR} && \
@@ -83,8 +85,10 @@ for p in `cat ${RESULTS_DIR}/unibuild/debian-package-order`; do
 done
 
 # Shutdown all containers
-docker compose stop ${OS}_amd64
-docker compose stop ${OS}_arm64
+for ARCH in ${ARCHES[@]}; do
+    LARCH=${ARCH#*\/}
+    docker compose stop ${OS}_$LARCH
+done
 docker compose down
-docker volume rm app
+docker volume prune -f
 
