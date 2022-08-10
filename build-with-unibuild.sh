@@ -9,22 +9,14 @@ export OS=d10
 
 # Launch all containers
 ARCHES='linux/amd64 linux/arm64 linux/armv7 linux/ppc64le'
-CONTAINERS=""
 docker compose down
 docker volume rm app
 for ARCH in ${ARCHES[@]}; do
     LARCH=${ARCH#*\/}
-    if [[ $LARCH != "a??64" ]]; then
-        CONTAINERS+="${OS}_${LARCH} "
-    else
-        # These containers need to be launched separately as they doesn't run systemd
-        # TODO: Can this be managed through docker compose up ?
-        docker compose run -d --rm ${OS}_$LARCH
-    fi
+    docker compose run -d --rm ${OS}_$LARCH
 done
-docker compose up -d $CONTAINERS
 
-# Prepare the containers
+# Prepare the containers with repository
 for ARCH in ${ARCHES[@]}; do
     LARCH=${ARCH#*\/}
     LARCH=${LARCH/\/}
