@@ -10,13 +10,17 @@ export OS=d10
 # Launch all containers
 ARCHES='linux/amd64 linux/arm64 linux/armv7 linux/ppc64le'
 CONTAINERS=""
+docker compose down
 for ARCH in ${ARCHES[@]}; do
     LARCH=${ARCH#*\/}
-    if [[ $LARCH != "amd64" ]]; then
+    if [[ $LARCH != "a??64" ]]; then
         CONTAINERS+="${OS}_${LARCH} "
+    else
+        # These containers need to be launched separately as they doesn't run systemd
+        # TODO: Can this be managed through docker compose up ?
+        docker compose run -d --rm ${OS}_$LARCH
     fi
 done
-docker compose down
 docker compose up -d $CONTAINERS
 # The amd64 container need to be launched separately as it doesn't run systemd
 docker compose run -d --rm ${OS}_amd64
@@ -26,9 +30,7 @@ for ARCH in ${ARCHES[@]}; do
     LARCH=${ARCH#*\/}
     LARCH=${LARCH/\/}
     # TODO: can we run all builds in parallel?
-    # TODO: remove install of curl when it is part of the unibuild images
     docker compose exec -T ${OS}_${LARCH} bash -c "\
-        apt-get -y install curl && \
         curl http://downloads.perfsonar.net/debian/$REPO.gpg.key | apt-key add - && \
         curl -o /etc/apt/sources.list.d/$REPO.list http://downloads.perfsonar.net/debian/$REPO.list && \
         apt-get update \
@@ -64,7 +66,6 @@ for p in `cat ${RESULTS_DIR}/unibuild/debian-package-order`; do
                 # We need to build this package for all architectures
                 echo -e "\n===== Building \033[1mbinary package ${p}\033[0m on \033[1m${ARCH}\033[0m in \033[1m${OS}_${LARCH}\033[0m container ====="
                 # TODO: can we run all builds in parallel?
-                # TODO: how to output results in ${RESULTS_DIR}?
                 docker compose exec -T ${OS}_${LARCH} bash -c "\
                     cd $BUILD_DIR && \
                     mk-build-deps --install --tool 'apt-get --yes --no-install-recommends -o Debug::pkgProblemResolver=yes' --remove && \
@@ -91,7 +92,6 @@ for p in `cat ${RESULTS_DIR}/unibuild/debian-package-order`; do
 done
 
 # Shutdown all containers
-cd ..
 docker compose stop ${OS}_amd64
 docker compose down
 
