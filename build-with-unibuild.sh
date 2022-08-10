@@ -2,9 +2,10 @@
 
 # Constants
 BUILD_DIR=multiarch_build
+RESULTS_DIR=unibuild-repo
 
 # Variables
-export OS=debian10
+export OS=d10
 
 # Launch all containers
 ARCHES='linux/amd64 linux/arm64 linux/armv7 linux/ppc64le'
@@ -42,18 +43,17 @@ echo "*** Unibuild: done! ***"
 echo
 
 # Then loop on all packages from the unibuild/build-order file
-cd unibuild-repo
 mkdir -p $BUILD_DIR
-for p in `cat unibuild/debian-package-order`; do
+for p in `cat ${RESULTS_DIR}/unibuild/debian-package-order`; do
     # Extract source package
     rm -rf $BUILD_DIR/*
     echo "Extracting ${p} in ${BUILD_DIR} to see if we must build it."
-    if head -1 ${p}*.dsc | grep -q '(native)' ; then
+    if head -1 ${RESULTS_DIR}/${p}*.dsc | grep -q '(native)' ; then
         echo "This is a Debian native package, there is no orig tarball."
-        cat ${p}*.tar.xz | tar -x -C $BUILD_DIR --strip-components 1 -f -
+        cat ${RESULTS_DIR}/${p}*.tar.xz | tar -x -C $BUILD_DIR --strip-components 1 -f -
     else
-        cat ${p}*.orig.* | tar -x -C $BUILD_DIR --strip-components 1 -f -
-        cat ${p}*.debian.tar.xz | tar -x -C $BUILD_DIR -f -
+        cat ${RESULTS_DIR}/${p}*.orig.* | tar -x -C $BUILD_DIR --strip-components 1 -f -
+        cat ${RESULTS_DIR}/${p}*.debian.tar.xz | tar -x -C $BUILD_DIR -f -
     fi
 
     for ARCH in ${ARCHES[@]}; do
@@ -64,20 +64,22 @@ for p in `cat unibuild/debian-package-order`; do
                 # We need to build this package for all architectures
                 echo -e "\n===== Building \033[1mbinary package ${p}\033[0m on \033[1m${ARCH}\033[0m in \033[1m${OS}_${LARCH}\033[0m container ====="
                 # TODO: can we run all builds in parallel?
+                # TODO: how to output results in ${RESULTS_DIR}?
                 docker compose exec -T ${OS}_${LARCH} bash -c "\
-                    cd /app/unibuild-repo/$BUILD_DIR/ && \
+                    cd $BUILD_DIR && \
                     mk-build-deps --install --tool 'apt-get --yes --no-install-recommends -o Debug::pkgProblemResolver=yes' --remove && \
                     dpkg-buildpackage -us -uc -i -sa -b && \
                     MYARCH=\$(dpkg --print-architecture) && \
                     cd .. && \
                     pwd && \
-                    ls -la *${p}*_\${MYARCH}.deb && \
-                    find . -name \"*${p}*_\${MYARCH}.deb\" | xargs apt-get -y install \
+                    ls -la *${p}*_\${MYARCH}.* && \
+                    find . -name \"*${p}*_\${MYARCH}.deb\" | xargs apt-get -y install && \
+                    mv *${p}*_\${MYARCH}.* ${RESULTS_DIR} \
                     "
             else
-                echo "We don't need to build ${p} for other architectures, but we'll install it in the Docker env."
+                echo -e "\033[1mWe don't need to build ${p} for ${ARCH}\033[0m, but we'll install it in the Docker env."
                 docker compose exec ${OS}_${LARCH} bash -c "\
-                    cd /app/unibuild-repo/ && \
+                    cd ${RESULTS_DIR} && \
                     pwd && \
                     ls -la *${p}*.deb && \
                     find . -name \"*${p}*.deb\" | xargs apt-get -y install \

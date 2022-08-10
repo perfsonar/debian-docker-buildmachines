@@ -13,7 +13,9 @@ export REPREPRO_BASE_DIR=/var/local/repo
 [ $? -eq 0 ] || exit 1
 
 # Add resulting packages to local repository
-reprepro --waitforlock 12 -v includedsc ${RELEASE} ${BUILD_RESULTS}/*.dsc
+for c in `ls ${BUILD_RESULTS}/*.dsc`; do
+    reprepro --waitforlock 12 -v includedsc ${RELEASE} $c
+done
 for c in `ls ${BUILD_RESULTS}/*_[^s][a-z]*.changes`; do
     reprepro --waitforlock 12 -v include ${RELEASE} $c
 done
