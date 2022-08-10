@@ -39,6 +39,8 @@ docker builder prune -af
 echo
 docker system prune -f
 echo
+docker volume prune
+echo
 
 ### Create and setup the buildx instance for the multi arch builds
 # See https://docs.docker.com/desktop/multi-arch/

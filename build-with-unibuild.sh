@@ -11,6 +11,7 @@ export OS=d10
 ARCHES='linux/amd64 linux/arm64 linux/armv7 linux/ppc64le'
 CONTAINERS=""
 docker compose down
+docker volume rm app
 for ARCH in ${ARCHES[@]}; do
     LARCH=${ARCH#*\/}
     if [[ $LARCH != "a??64" ]]; then
@@ -22,8 +23,6 @@ for ARCH in ${ARCHES[@]}; do
     fi
 done
 docker compose up -d $CONTAINERS
-# The amd64 container need to be launched separately as it doesn't run systemd
-docker compose run -d --rm ${OS}_amd64
 
 # Prepare the containers
 for ARCH in ${ARCHES[@]}; do
@@ -93,5 +92,7 @@ done
 
 # Shutdown all containers
 docker compose stop ${OS}_amd64
+docker compose stop ${OS}_arm64
 docker compose down
+docker volume rm app
 
