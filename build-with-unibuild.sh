@@ -74,11 +74,12 @@ for p in `cat ${RESULTS_DIR}/unibuild/debian-package-order`; do
                 # This is needed to make sure dependencies are satisfied
                 # Alternative would be to push packages to repository after each build instead of at the very end
                 echo -e "\033[1mWe don't need to build ${p} for ${ARCH}\033[0m, but we'll install it in the Docker env."
-                docker compose exec ${OS}_${LARCH} bash -c "\
+                docker compose exec -T ${OS}_${LARCH} bash -c "\
                     cd ${RESULTS_DIR} && \
                     pwd && \
-                    ls -la *${p}*.deb && \
-                    find . -name \"*${p}*.deb\" | xargs apt-get -y install \
+                    b=\$(grep -Po '(?<=Binary: ).*' ${p}*.dsc) && \
+                    ls -la \$b*.deb && \
+                    find . -name \"\$b*.deb\" | xargs apt-get -y install \
                     "
             fi
         fi
