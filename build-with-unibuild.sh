@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 
 # Constants
-BUILD_DIR=multiarch_build
-RESULTS_DIR=unibuild-repo
+BUILD_DIR='multiarch_build'
+FULL_BUILD_DIR=`pwd`"/$BUILD_DIR"
+RESULTS_DIR='unibuild-repo'
 
 # Variables
 export OS=d10
@@ -36,10 +37,11 @@ echo "*** Unibuild: done! ***"
 echo
 
 # Then loop on all packages from the unibuild/build-order file
-mkdir -p $BUILD_DIR
 for p in `cat ${RESULTS_DIR}/unibuild/debian-package-order`; do
     # Extract source package
-    rm -rf $BUILD_DIR/*
+    # sudoers configuration needed for this to work
+    sudo /bin/rm -rf $FULL_BUILD_DIR
+    mkdir -p $BUILD_DIR
     echo "Extracting ${p} in ${BUILD_DIR} to see if we must build it."
     if head -1 ${RESULTS_DIR}/${p}*.dsc | grep -q '(native)' ; then
         echo "This is a Debian native package, there is no orig tarball."
