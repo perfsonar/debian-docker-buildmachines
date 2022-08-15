@@ -25,7 +25,8 @@ for ARCH in ${ARCHES[@]}; do
     docker compose exec -T ${OS}_${LARCH} bash -c "\
         curl -s http://downloads.perfsonar.net/debian/$REPO.gpg.key | apt-key add - && \
         curl -s -o /etc/apt/sources.list.d/$REPO.list http://downloads.perfsonar.net/debian/$REPO.list && \
-        apt-get update \
+        apt-get update && \
+        export DEBIAN_FRONTEND=noninteractive \
         "
 done
 
@@ -71,8 +72,9 @@ for p in `cat ${RESULTS_DIR}/unibuild/debian-package-order`; do
                     mv *${p}*_\${MYARCH}.* ${RESULTS_DIR} \
                     "
             else
-                # This is needed to make sure dependencies are satisfied
+                # This might be needed to make sure dependencies are satisfied
                 # Alternative would be to push packages to repository after each build instead of at the very end
+                # Or use a prepopulated snapshot repo
                 echo -e "\033[1mWe don't need to build ${p} for ${ARCH}.\033[0m We'll just skip it."
 #                echo -e "\033[1mWe don't need to build ${p} for ${ARCH}\033[0m, but we'll install it in the Docker env."
 #                docker compose exec -T ${OS}_${LARCH} bash -c "\

@@ -33,12 +33,26 @@ ENV no_proxy=
 # TODO: should be moved to dedicated image
 FROM base-${useproxy}-proxy AS ps-base-image
 RUN echo "This Docker image is using proxy: ${https_proxy:-none}"
-RUN apt-get update && apt-get install -y \
+RUN apt-get clean && apt-get update
+# Painful hack to care for an outdated ppc64el Debian repository
+RUN /bin/bash -c 'if [[ $(dpkg --print-architecture) != "ppc64el" ]]; then\
+    apt-get install -y \
         apt-utils \
         curl \
         gnupg \
         systemd \
-        systemd-sysv
+        systemd-sysv ; \
+    else \
+    apt-get install -y \
+        --allow-downgrades \
+        gpgv=2.2.12-1+deb10u1 \
+#        libssl1.1=1.1.1n-0+deb10u1 \
+        apt-utils \
+        curl \
+        gnupg \
+        systemd \
+        systemd-sysv ; \
+    fi'
 
 # To make systemd work properly
 # From https://github.com/j8r/dockerfiles/tree/master/systemd
