@@ -6,7 +6,10 @@ FULL_BUILD_DIR=`pwd`"/$BUILD_DIR"
 RESULTS_DIR='unibuild-repo'
 
 # Variables
-export OS=d10
+if [ -z "$OS" ]; then
+    OS=d10
+fi
+export OS
 
 # Launch all containers
 ARCHES='linux/amd64 linux/arm64 linux/armv7 linux/ppc64le'
@@ -67,9 +70,9 @@ for p in `cat ${RESULTS_DIR}/unibuild/debian-package-order`; do
                     MYARCH=\$(dpkg --print-architecture) && \
                     cd .. && \
                     pwd && \
-                    ls -la *${p}*_\${MYARCH}.* && \
-                    find . -name \"*${p}*_\${MYARCH}.deb\" | xargs apt-get -y install && \
-                    mv *${p}*_\${MYARCH}.* ${RESULTS_DIR} \
+                    ls -la **_\${MYARCH}.* && \
+                    find . -name \"*_\${MYARCH}.deb\" | xargs apt-get -y install && \
+                    mv *_\${MYARCH}.* ${RESULTS_DIR} \
                     "
             else
                 # This might be needed to make sure dependencies are satisfied
@@ -81,6 +84,7 @@ for p in `cat ${RESULTS_DIR}/unibuild/debian-package-order`; do
 #                    cd ${RESULTS_DIR} && \
 #                    pwd && \
 #                    b=\$(grep -Po '(?<=Binary: ).*' ${p}*.dsc) && \
+# TODO: make sure we install also sub-packages (like lib…)
 #                    ls -la \$b*.deb && \
 #                    find . -name \"\$b*.deb\" | xargs apt-get -y install \
 #                    "

@@ -9,6 +9,7 @@ export REPREPRO_BASE_DIR=/var/local/repo
     && BUILD_RESULTS=`pwd`'/../build_results'
 
 # Get $BUILD_ARCH, $DIST and $RELEASE from the content of the source package
+# TODO: Following the Unibuild usage, this might need to be done differently
 . ./check-release-repo.sh ${BUILD_RESULTS}
 [ $? -eq 0 ] || exit 1
 

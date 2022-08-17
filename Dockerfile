@@ -34,7 +34,6 @@ ENV no_proxy=
 FROM base-${useproxy}-proxy AS ps-base-image
 RUN echo "This Docker image is using proxy: ${https_proxy:-none}"
 RUN apt-get clean && apt-get update
-# Painful hack to care for an outdated ppc64el Debian repository
 RUN /bin/bash -c 'if [[ $(dpkg --print-architecture) != "ppc64el" ]]; then\
     apt-get install -y \
         apt-utils \
@@ -43,6 +42,7 @@ RUN /bin/bash -c 'if [[ $(dpkg --print-architecture) != "ppc64el" ]]; then\
         systemd \
         systemd-sysv ; \
     else \
+# Painful hack to care for an outdated ppc64el Debian repository (downgrade 2 packages) \
     apt-get install -y \
         --allow-downgrades \
         gpgv=2.2.12-1+deb10u1 \
