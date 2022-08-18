@@ -26,6 +26,7 @@ for ARCH in ${ARCHES[@]}; do
     LARCH=${LARCH/\/}
     # TODO: can we run all builds in parallel?
     docker compose exec -T ${OS}_${LARCH} bash -c "\
+        sed 's/exit 101/exit 0/' /usr/sbin/policy-rc.d && \
         curl -s http://downloads.perfsonar.net/debian/$REPO.gpg.key | apt-key add - && \
         curl -s -o /etc/apt/sources.list.d/$REPO.list http://downloads.perfsonar.net/debian/$REPO.list && \
         apt-get update && \
