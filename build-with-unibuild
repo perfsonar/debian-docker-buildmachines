@@ -10,9 +10,21 @@ if [ -z "$OS" ]; then
     OS=d10
 fi
 export OS
+if [ -z "$REPO" ]; then
+    REPO=perfsonar-minor-snapshot
+fi
+export REPO
+
+# By default, the setup is to build packages for all the supported architectures
+# If you want to build for different ones, you should call the scripts with the ARCHES
+# variable set similarily to (here for all valid and supported architectures):
+# ARCHES='linux/amd64' ./build-with-unibuild
+# ARCHES='linux/amd64 linux/arm64' ./build-with-unibuild
+if [ -z "$ARCHES" ]; then
+    ARCHES='linux/amd64 linux/arm64 linux/armv7 linux/ppc64le'
+fi
 
 # Launch all containers
-ARCHES='linux/amd64 linux/arm64 linux/armv7 linux/ppc64le'
 docker compose down
 docker volume prune -f
 for ARCH in ${ARCHES[@]}; do
@@ -26,7 +38,6 @@ for ARCH in ${ARCHES[@]}; do
     LARCH=${LARCH/\/}
     # TODO: can we run all builds in parallel?
     docker compose exec -T ${OS}_${LARCH} bash -c "\
-        sed -i 's/exit 101/exit 0/' /usr/sbin/policy-rc.d && \
         curl -s http://downloads.perfsonar.net/debian/$REPO.gpg.key | apt-key add - && \
         curl -s -o /etc/apt/sources.list.d/$REPO.list http://downloads.perfsonar.net/debian/$REPO.list && \
         apt-get update && \
@@ -85,7 +96,7 @@ for p in `cat ${RESULTS_DIR}/unibuild/debian-package-order`; do
 #                    cd ${RESULTS_DIR} && \
 #                    pwd && \
 #                    b=\$(grep -Po '(?<=Binary: ).*' ${p}*.dsc) && \
-# TODO: make sure we install also sub-packages (like lib…)
+# TODO: if we install, make sure we install also sub-packages (like lib…)
 #                    ls -la \$b*.deb && \
 #                    find . -name \"\$b*.deb\" | xargs apt-get -y install \
 #                    "
