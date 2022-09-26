@@ -9,11 +9,12 @@ RESULTS_DIR='unibuild-repo'
 if [ -z "$OS" ]; then
     OS=d10
 fi
-export OS
+# Other OS to check for building packages
+OSes="u18 u20"
 if [ -z "$REPO" ]; then
     REPO=perfsonar-minor-snapshot
 fi
-export REPO
+export OS OSes REPO
 
 # By default, the setup is to build packages for all the supported architectures
 # If you want to build for different ones, you should call the scripts with the ARCHES
@@ -24,93 +25,119 @@ if [ -z "$ARCHES" ]; then
     ARCHES='linux/amd64 linux/arm64 linux/armv7 linux/ppc64le'
 fi
 
-# Launch all containers
-docker compose down
-docker volume prune -f
-for ARCH in ${ARCHES[@]}; do
-    LARCH=${ARCH#*\/}
-    docker compose run -d --rm ${OS}_$LARCH
-done
-
-# Prepare the containers with repository
-for ARCH in ${ARCHES[@]}; do
-    LARCH=${ARCH#*\/}
-    LARCH=${LARCH/\/}
-    # TODO: can we run all builds in parallel?
-    docker compose exec -T ${OS}_${LARCH} bash -c "\
-        curl -s http://downloads.perfsonar.net/debian/$REPO.gpg.key | apt-key add - && \
-        curl -s -o /etc/apt/sources.list.d/$REPO.list http://downloads.perfsonar.net/debian/$REPO.list && \
-        apt-get update && \
-        export DEBIAN_FRONTEND=noninteractive \
-        "
-done
-
-# Make the master build with unibuild (on amd64 container)
-docker compose exec -T ${OS}_amd64 unibuild build
-
-echo 
-echo "*** Unibuild: done! ***"
-echo
-
-# Then loop on all packages from the unibuild/build-order file
-for p in `cat ${RESULTS_DIR}/unibuild/debian-package-order`; do
+# Build foreign architectures, a local function to avoid duplicate code
+build_foreign() {
+    local OS="$1"
+    local p="$2"
+    local P_DIR="${RESULTS_DIR}"
+    if [ $# -eq 3 ]; then
+        P_DIR="$3/unibuild-work/products"
+    fi
     # Extract source package
     # sudoers configuration needed for this to work
     sudo /bin/rm -rf $FULL_BUILD_DIR
     mkdir -p $BUILD_DIR
-    echo "Extracting ${p} in ${BUILD_DIR} to see if we must build it."
-    if head -1 ${RESULTS_DIR}/${p}*.dsc | grep -q '(native)' ; then
+    echo -e "\n# Extracting ${p} in ${BUILD_DIR} to see if we must build it on other architectures."
+    # TODO: we should take the newest files present as olders might be existing from a previous run
+    if head -1 ${P_DIR}/${p}*.dsc | grep -q '(native)' ; then
         echo "This is a Debian native package, there is no orig tarball."
-        cat ${RESULTS_DIR}/${p}*.tar.xz | tar -Jx -C $BUILD_DIR --strip-components 1 -f -
+        cat ${P_DIR}/${p}*.tar.xz | tar -Jx -C $BUILD_DIR --strip-components 1 -f -
     else
-        cat ${RESULTS_DIR}/${p}*.orig.* | tar -zx -C $BUILD_DIR --strip-components 1 -f -
-        cat ${RESULTS_DIR}/${p}*.debian.tar.xz | tar -Jx -C $BUILD_DIR -f -
+        cat ${P_DIR}/${p}*.orig.* | tar -zx -C $BUILD_DIR --strip-components 1 -f -
+        cat ${P_DIR}/${p}*.debian.tar.xz | tar -Jx -C $BUILD_DIR -f -
     fi
 
     for ARCH in ${ARCHES[@]}; do
-        LARCH=${ARCH#*\/}
-        LARCH=${LARCH/\/}
+        LARCH="${ARCH#*\/}"
+        LARCH="${LARCH/\/}"
         if [[ $LARCH != "amd64" ]]; then
             if grep '^Architecture: ' $BUILD_DIR/debian/control | grep -qv 'Architecture: all'; then
                 # We need to build this package for all architectures
                 echo -e "\n===== Building \033[1mbinary package ${p}\033[0m on \033[1m${ARCH}\033[0m in \033[1m${OS}_${LARCH}\033[0m container ====="
-                # TODO: can we run all builds in parallel?
+                # TODO: can we run all ARCHES builds in parallel?
                 docker compose exec -T ${OS}_${LARCH} bash -c "\
                     cd $BUILD_DIR && \
                     mk-build-deps --install --tool 'apt-get --yes --no-install-recommends -o Debug::pkgProblemResolver=yes' --remove && \
                     dpkg-buildpackage -us -uc -i -sa -b && \
                     MYARCH=\$(dpkg --print-architecture) && \
                     cd .. && \
-                    pwd && \
-                    ls -la **_\${MYARCH}.* && \
-                    find . -name \"*_\${MYARCH}.deb\" | xargs apt-get -y install && \
-                    mv *_\${MYARCH}.* ${RESULTS_DIR} \
+                    ls -la *_\${MYARCH}.* && \
+                    apt-get -y install ./*_\${MYARCH}.deb && \
+                    echo && echo Collecting files from $p ... && \
+                    for f in *_\${MYARCH}.*; do mv \${f} ${RESULTS_DIR}; done && \
+                    echo ' ... done.' && echo \
                     "
             else
-                # This might be needed to make sure dependencies are satisfied
+                # Installing packages might be needed to make sure dependencies are satisfied
                 # Alternative would be to push packages to repository after each build instead of at the very end
                 # Or use a prepopulated snapshot repo
+                # But for now we do nothing (and that seems fine)
                 echo -e "\033[1mWe don't need to build ${p} for ${ARCH}.\033[0m We'll just skip it."
-#                echo -e "\033[1mWe don't need to build ${p} for ${ARCH}\033[0m, but we'll install it in the Docker env."
-#                docker compose exec -T ${OS}_${LARCH} bash -c "\
-#                    cd ${RESULTS_DIR} && \
-#                    pwd && \
-#                    b=\$(grep -Po '(?<=Binary: ).*' ${p}*.dsc) && \
-# TODO: if we install, make sure we install also sub-packages (like lib…)
-#                    ls -la \$b*.deb && \
-#                    find . -name \"\$b*.deb\" | xargs apt-get -y install \
-#                    "
             fi
         fi
     done
+    # TODO: we should also update the local Unibuild repository
+    # and make sure it keeps versions of the different packages for rebuilds and multi-arch
     echo
+}
+# Launch all containers
+docker compose down
+docker volume prune -f
+CONTAINERS=""
+for ARCH in ${ARCHES[@]}; do
+    LARCH="${ARCH#*\/}"
+    CONTAINERS+=${OS}_${LARCH/\/}" "
+    for LOS in ${OSes[@]}; do
+        CONTAINERS+=${LOS}_${LARCH/\/}" "
+    done
+done
+docker compose up -d $CONTAINERS
+
+# Prepare the containers with pS repository, running in background while we'll make the master build
+echo -e "\n\033[1mAdding the perfSONAR repository to all containers…\033[0m\n"
+for CONTAINER in ${CONTAINERS[@]}; do
+    [[ "$CONTAINER" == "d10_amd64" ]] && continue
+    docker compose exec -dT ${CONTAINER} bash -c "\
+        export DEBIAN_FRONTEND=noninteractive && \
+        curl -s http://downloads.perfsonar.net/debian/$REPO.gpg.key | apt-key add - && \
+        curl -s -o /etc/apt/sources.list.d/$REPO.list http://downloads.perfsonar.net/debian/$REPO.list && \
+        apt-get update \
+        "
+done
+
+# Add pS repo and make the master build with unibuild (on amd64 container)
+docker compose exec -T ${OS}_amd64 bash -c "\
+    export DEBIAN_FRONTEND=noninteractive && \
+    curl -s http://downloads.perfsonar.net/debian/$REPO.gpg.key | apt-key add - && \
+    curl -s -o /etc/apt/sources.list.d/$REPO.list http://downloads.perfsonar.net/debian/$REPO.list && \
+    apt-get update && \
+    echo -e '\n\033[1mAnd then starting the full pScheduler Unibuild.\033[0m\n' && \
+    unibuild build \
+    "
+
+echo -e "\n\n*** Unibuild: done! ***\n"
+
+# Then loop on all packages from the unibuild/build-order file
+# to see which one we need to build on foreign architectures (QEMU)
+for p in `cat ${RESULTS_DIR}/unibuild/debian-package-order`; do
+    build_foreign ${OS} ${p}
+done
+
+# Finally, loop on the other OS for which we need to build packages differently
+# TODO: This loop should check if there is actually a different changelog for the OS it is trying to build, otherwise any already built package will get overwritten
+for p in `find . -name Makefile -exec grep -q "(OS_PACKAGING),deb" {} \; -ls | sed 's/.*\.\/\(.*\)\/Makefile/\1/'`; do
+    for otherOS in ${OSes[@]}; do
+        # Build each package on main architecture first
+        echo -e "\n===== Building \033[1mpackage ${p}\033[0m in \033[1m${otherOS}_amd64\033[0m container ====="
+        rm -f ${RESULTS_DIR}/unibuild/debian-package-order
+        docker compose exec -T ${otherOS}_amd64 bash -c "unibuild build --start ${p} --stop ${p}"
+        # The resulting package name is not the package dirname
+        result=`head -1 ${RESULTS_DIR}/unibuild/debian-package-order`
+        build_foreign ${otherOS} ${result} ${p}
+    done
 done
 
 # Shutdown all containers
-for ARCH in ${ARCHES[@]}; do
-    LARCH=${ARCH#*\/}
-    docker compose stop ${OS}_$LARCH
-done
-docker compose down
+docker compose down --remove-orphans
 docker volume prune -f
 

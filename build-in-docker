@@ -39,7 +39,6 @@ if [ -z "$ARCHES" ]; then
 fi
 # Defaults
 source_and_binary=true
-need_shift=false
 jenkins_build=false
 keep_builds=false
 OTHEROPT=1
@@ -47,10 +46,10 @@ OTHEROPT=1
 # Parsing options
 while getopts "BDhjb:t:ksu" OPT; do
     case $OPT in
-        B) source_and_binary=false ; need_shift=true ;;
-        D) debug_build="bash" ; need_shift=true ;;
-        j) jenkins_build=true ; need_shift=true ;;
-        k) keep_builds=true ; need_shift=true ;;
+        B) source_and_binary=false ;;
+        D) debug_build="bash" ;;
+        j) jenkins_build=true ;;
+        k) keep_builds=true ;;
 # The other options will get passed to ps-source-builder so we must not shift them
         b|t) ((OTHEROPT+=2)) ;;
         s|u) ((OTHEROPT+=1)) ;;

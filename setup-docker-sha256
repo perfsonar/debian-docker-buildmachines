@@ -23,5 +23,5 @@ for OSimage in ${OSimages[@]}; do
     done
     echo
 done
-git commit -m "Updating Docker multiarch image sha256" docker-compose.yml
+#git commit -m "Updating Docker multiarch image sha256" docker-compose.yml
 
