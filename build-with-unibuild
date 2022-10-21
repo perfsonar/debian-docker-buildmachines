@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 
-# Constants
+### Constants
 BUILD_DIR='multiarch_build'
 FULL_BUILD_DIR=`pwd`"/$BUILD_DIR"
 RESULTS_DIR='unibuild-repo'
+CONTAINER_UPDATE_SCRIPT=" export DEBIAN_FRONTEND=noninteractive && \
+    curl -s http://downloads.perfsonar.net/debian/$REPO.gpg.key | apt-key add - && \
+    curl -s -o /etc/apt/sources.list.d/$REPO.list http://downloads.perfsonar.net/debian/$REPO.list && \
+    apt-get update"
 
-# Variables
+### Variables
 if [ -z "$OS" ]; then
     OS=d10
 fi
@@ -24,6 +28,15 @@ export OS OSes REPO
 if [ -z "$ARCHES" ]; then
     ARCHES='linux/amd64 linux/arm64 linux/armv7 linux/ppc64le'
 fi
+myARCH="amd64"
+
+### Some local subs
+# Clean up
+clean_up() {
+    # Shutdown all containers
+    docker compose down --remove-orphans
+    docker volume prune -f
+}
 
 # Build foreign architectures, a local function to avoid duplicate code
 build_foreign() {
@@ -50,7 +63,7 @@ build_foreign() {
     for ARCH in ${ARCHES[@]}; do
         LARCH="${ARCH#*\/}"
         LARCH="${LARCH/\/}"
-        if [[ $LARCH != "amd64" ]]; then
+        if [[ $LARCH != "$myARCH" ]]; then
             if grep '^Architecture: ' $BUILD_DIR/debian/control | grep -qv 'Architecture: all'; then
                 # We need to build this package for all architectures
                 echo -e "\n===== Building \033[1mbinary package ${p}\033[0m on \033[1m${ARCH}\033[0m in \033[1m${OS}_${LARCH}\033[0m container ====="
@@ -80,41 +93,37 @@ build_foreign() {
     # and make sure it keeps versions of the different packages for rebuilds and multi-arch
     echo
 }
-# Launch all containers
-docker compose down
-docker volume prune -f
+
+### Main
+# Launch all foreign ARCH containers
 CONTAINERS=""
 for ARCH in ${ARCHES[@]}; do
     LARCH="${ARCH#*\/}"
-    CONTAINERS+=${OS}_${LARCH/\/}" "
-    for LOS in ${OSes[@]}; do
-        CONTAINERS+=${LOS}_${LARCH/\/}" "
-    done
+    if [[ $LARCH != "$myARCH" ]]; then
+        CONTAINERS+=${OS}_${LARCH/\/}" "
+        for LOS in ${OSes[@]}; do
+            CONTAINERS+=${LOS}_${LARCH/\/}" "
+        done
+    fi
 done
 docker compose up -d $CONTAINERS
 
-# Prepare the containers with pS repository, running in background while we'll make the master build
+# Prepare the foreign containers with pS repository, running in background while we'll make the master build
 echo -e "\n\033[1mAdding the perfSONAR repository to all containers…\033[0m\n"
 for CONTAINER in ${CONTAINERS[@]}; do
-    [[ "$CONTAINER" == "d10_amd64" ]] && continue
-    docker compose exec -dT ${CONTAINER} bash -c "\
-        export DEBIAN_FRONTEND=noninteractive && \
-        curl -s http://downloads.perfsonar.net/debian/$REPO.gpg.key | apt-key add - && \
-        curl -s -o /etc/apt/sources.list.d/$REPO.list http://downloads.perfsonar.net/debian/$REPO.list && \
-        apt-get update \
-        "
+    docker compose exec -dT ${CONTAINER} bash -c "$CONTAINER_UPDATE_SCRIPT"
 done
 
-# Add pS repo and make the master build with unibuild (on amd64 container)
-docker compose exec -T ${OS}_amd64 bash -c "\
-    export DEBIAN_FRONTEND=noninteractive && \
-    curl -s http://downloads.perfsonar.net/debian/$REPO.gpg.key | apt-key add - && \
-    curl -s -o /etc/apt/sources.list.d/$REPO.list http://downloads.perfsonar.net/debian/$REPO.list && \
-    apt-get update && \
+# Add pS repo and make the master build with unibuild
+docker compose run -T ${OS}_${myARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
     echo -e '\n\033[1mAnd then starting the full pScheduler Unibuild.\033[0m\n' && \
     unibuild build \
     "
-
+if [ $? -ne 0 ]; then
+    echo -e "\nSomething went wrong with Unibuild, I'll stop here.\n"
+    clean_up
+    exit 1
+fi
 echo -e "\n\n*** Unibuild: done! ***\n"
 
 # Then loop on all packages from the unibuild/build-order file
@@ -128,16 +137,23 @@ done
 for p in `find . -name Makefile -exec grep -q "(OS_PACKAGING),deb" {} \; -ls | sed 's/.*\.\/\(.*\)\/Makefile/\1/'`; do
     for otherOS in ${OSes[@]}; do
         # Build each package on main architecture first
-        echo -e "\n===== Building \033[1mpackage ${p}\033[0m in \033[1m${otherOS}_amd64\033[0m container ====="
+        echo -e "\n===== Building \033[1mpackage ${p}\033[0m in \033[1m${otherOS}_${myARCH}\033[0m container ====="
         rm -f ${RESULTS_DIR}/unibuild/debian-package-order
-        docker compose exec -T ${otherOS}_amd64 bash -c "unibuild build --start ${p} --stop ${p}"
+        # This is not ideal to run the CONTAINER_UPDATE_SCRIPT each time we build a package,
+        # TODO: but that's the only way to collect the return code (run vs exec).  :-/
+        docker compose run -T ${otherOS}_${myARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
+            unibuild build --start ${p} --stop ${p} \
+            "
+        if [ $? -ne 0 ]; then
+            echo -e "\nSomething went wrong with Unibuild on ${otherOS}_${myARCH} for package ${p}, I'll stop here.\n"
+            clean_up
+            exit 1
+        fi
         # The resulting package name is not the package dirname
         result=`head -1 ${RESULTS_DIR}/unibuild/debian-package-order`
         build_foreign ${otherOS} ${result} ${p}
     done
 done
 
-# Shutdown all containers
-docker compose down --remove-orphans
-docker volume prune -f
+clean_up
 
