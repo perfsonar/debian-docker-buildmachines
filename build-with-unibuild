@@ -106,12 +106,12 @@ for ARCH in ${ARCHES[@]}; do
         done
     fi
 done
-docker compose up -d $CONTAINERS
+docker compose up -d $CONTAINERS || exit 1
 
 # Prepare the foreign containers with pS repository, running in background while we'll make the master build
 echo -e "\n\033[1mAdding the perfSONAR repository to all containers…\033[0m\n"
 for CONTAINER in ${CONTAINERS[@]}; do
-    docker compose exec -dT ${CONTAINER} bash -c "$CONTAINER_UPDATE_SCRIPT"
+    docker compose exec -dT ${CONTAINER} bash -c "$CONTAINER_UPDATE_SCRIPT" || exit 1
 done
 
 # Add pS repo and make the master build with unibuild
