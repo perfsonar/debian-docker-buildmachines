@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Note: this script needs at least 2 sudoers whitelisting to be able to run under Jenkins
+
 ### Constants
 BUILD_DIR='multiarch_build'
 FULL_BUILD_DIR=`pwd`"/$BUILD_DIR"
@@ -78,7 +80,7 @@ build_foreign() {
                     apt-get -y install ./*_\${MYARCH}.deb && \
                     echo && echo Collecting files from $p ... && \
                     for f in *_\${MYARCH}.*; do mv \${f} ${RESULTS_DIR}; done && \
-                    echo ' ... done.' && echo \
+                    echo '   ... done.' && echo \
                     "
             else
                 # Installing packages might be needed to make sure dependencies are satisfied
@@ -138,7 +140,7 @@ for p in `find . -name Makefile -exec grep -q "(OS_PACKAGING),deb" {} \; -ls | s
     for otherOS in ${OSes[@]}; do
         # Build each package on main architecture first
         echo -e "\n===== Building \033[1mpackage ${p}\033[0m in \033[1m${otherOS}_${myARCH}\033[0m container ====="
-        rm -f ${RESULTS_DIR}/unibuild/debian-package-order
+        sudo rm -f ${RESULTS_DIR}/unibuild/debian-package-order
         # This is not ideal to run the CONTAINER_UPDATE_SCRIPT each time we build a package,
         # TODO: but that's the only way to collect the return code (run vs exec).  :-/
         docker compose run -T ${otherOS}_${myARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
