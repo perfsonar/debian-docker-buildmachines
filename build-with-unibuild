@@ -50,8 +50,8 @@ build_foreign() {
     fi
     # Extract source package
     # sudoers configuration needed for this to work
-    sudo /bin/rm -rf $FULL_BUILD_DIR
-    mkdir -p $BUILD_DIR
+    sudo /bin/rm -rf $FULL_BUILD_DIR || exit 1
+    mkdir -p $BUILD_DIR || exit 1
     echo -e "\n# Extracting ${p} in ${BUILD_DIR} to see if we must build it on other architectures."
     # TODO: we should take the newest files present as olders might be existing from a previous run
     if head -1 ${P_DIR}/${p}*.dsc | grep -q '(native)' ; then
@@ -131,7 +131,7 @@ echo -e "\n\n*** Unibuild: done! ***\n"
 # Then loop on all packages from the unibuild/build-order file
 # to see which one we need to build on foreign architectures (QEMU)
 for p in `cat ${RESULTS_DIR}/unibuild/debian-package-order`; do
-    build_foreign ${OS} ${p}
+    build_foreign ${OS} ${p} || exit 1
 done
 
 # Finally, loop on the other OS for which we need to build packages differently
@@ -140,7 +140,7 @@ for p in `find . -name Makefile -exec grep -q "(OS_PACKAGING),deb" {} \; -ls | s
     for otherOS in ${OSes[@]}; do
         # Build each package on main architecture first
         echo -e "\n===== Building \033[1mpackage ${p}\033[0m in \033[1m${otherOS}_${myARCH}\033[0m container ====="
-        sudo rm -f ${RESULTS_DIR}/unibuild/debian-package-order
+        sudo rm -f ${RESULTS_DIR}/unibuild/debian-package-order || exit 1
         # This is not ideal to run the CONTAINER_UPDATE_SCRIPT each time we build a package,
         # TODO: but that's the only way to collect the return code (run vs exec).  :-/
         docker compose run -T ${otherOS}_${myARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
@@ -153,7 +153,7 @@ for p in `find . -name Makefile -exec grep -q "(OS_PACKAGING),deb" {} \; -ls | s
         fi
         # The resulting package name is not the package dirname
         result=`head -1 ${RESULTS_DIR}/unibuild/debian-package-order`
-        build_foreign ${otherOS} ${result} ${p}
+        build_foreign ${otherOS} ${result} ${p} || exit 1
     done
 done
 
