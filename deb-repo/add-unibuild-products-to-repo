@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# This script adds the Debian packages produced by Unibuild
+# to a given APT repository managed with reprepro.
+# Arguments:
+#  $1: the directory containing packages built with Unibuild
+#  $2: the release repository where to store the packages
+
+# Checks args
+if [ $# -lt 2 ]; then
+    echo "We need two args:"
+    echo "  \$1: directory containing packages"
+    echo "  \$2: release repository"
+    exit 1
+fi
+BUILD_RESULTS=$1
+RELEASE=$2
+
+# Defaults
+export REPREPRO_BASE_DIR=/var/local/repo
+
+# Add resulting packages to repository
+for dsc in `ls ${BUILD_RESULTS}/*.dsc`; do
+    # From the main Unibuild run
+    reprepro --waitforlock 12 -v includedsc ${RELEASE} $dsc
+done
+for changes in `ls ${BUILD_RESULTS}/*_[^s][a-z]*.changes`; do
+    # From the additional foreign arch builds
+    reprepro --waitforlock 12 -v include ${RELEASE} $changes
+done
+
+# Run Lintian on built package
+for c in `ls ${BUILD_RESULTS}/*_*.changes`; do
+    lintian --suppress-tags bad-distribution-in-changes-file $c
+done
+

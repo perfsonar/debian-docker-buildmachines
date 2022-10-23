@@ -110,37 +110,17 @@ for ARCH in ${ARCHES[@]}; do
 done
 docker compose up -d $CONTAINERS || exit 1
 
-# Prepare the foreign containers with pS repository, running in background while we'll make the master build
 echo -e "\n\033[1mAdding the perfSONAR repository to all containers…\033[0m\n"
 for CONTAINER in ${CONTAINERS[@]}; do
+    # Running in the background, while we'll make the master builds
     docker compose exec -dT ${CONTAINER} bash -c "$CONTAINER_UPDATE_SCRIPT" || exit 1
 done
 
-# Add pS repo and make the master build with unibuild
-docker compose run -T ${OS}_${myARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
-    echo -e '\n\033[1mAnd then starting the full pScheduler Unibuild.\033[0m\n' && \
-    unibuild build \
-    "
-if [ $? -ne 0 ]; then
-    echo -e "\nSomething went wrong with Unibuild, I'll stop here.\n"
-    clean_up
-    exit 1
-fi
-echo -e "\n\n*** Unibuild: done! ***\n"
-
-# Then loop on all packages from the unibuild/build-order file
-# to see which one we need to build on foreign architectures (QEMU)
-for p in `cat ${RESULTS_DIR}/unibuild/debian-package-order`; do
-    build_foreign ${OS} ${p} || exit 1
-done
-
-# Finally, loop on the other OS for which we need to build packages differently
-# TODO: This loop should check if there is actually a different changelog for the OS it is trying to build, otherwise any already built package will get overwritten
+echo -e "\n\033[1mFirst loop on all additonal OSes (${OSes[@]}) we need to build specially crafted packages.\033[0m\n"
 for p in `find . -name Makefile -exec grep -q "(OS_PACKAGING),deb" {} \; -ls | sed 's/.*\.\/\(.*\)\/Makefile/\1/'`; do
     for otherOS in ${OSes[@]}; do
         # Build each package on main architecture first
         echo -e "\n===== Building \033[1mpackage ${p}\033[0m in \033[1m${otherOS}_${myARCH}\033[0m container ====="
-        sudo rm -f ${RESULTS_DIR}/unibuild/debian-package-order || exit 1
         # This is not ideal to run the CONTAINER_UPDATE_SCRIPT each time we build a package,
         # TODO: but that's the only way to collect the return code (run vs exec).  :-/
         docker compose run -T ${otherOS}_${myARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
@@ -153,8 +133,29 @@ for p in `find . -name Makefile -exec grep -q "(OS_PACKAGING),deb" {} \; -ls | s
         fi
         # The resulting package name is not the package dirname
         result=`head -1 ${RESULTS_DIR}/unibuild/debian-package-order`
+        # We now need to build it on foreign architectures
         build_foreign ${otherOS} ${result} ${p} || exit 1
+        # Remove leftovers to not confuse the next build
+        sudo rm -f ${RESULTS_DIR}/unibuild/* || exit 1
     done
+done
+
+# Add pS repo (see TODO in otherOS loop above) and make the master build on the main OS with unibuild
+echo -e "\n===== \033[1mStarting the main full pScheduler Unibuild in ${OS}_${myARCH} container\033[0m =====\n"
+docker compose run -T ${OS}_${myARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
+    unibuild build \
+    "
+if [ $? -ne 0 ]; then
+    echo -e "\nSomething went wrong with Unibuild, I'll stop here.\n"
+    clean_up
+    exit 1
+fi
+echo -e "\n\n*** Unibuild: done! ***\n"
+
+# Then loop on all packages from the unibuild/build-order file
+# to see which one we need to build on foreign architectures
+for p in `cat ${RESULTS_DIR}/unibuild/debian-package-order`; do
+    build_foreign ${OS} ${p} || exit 1
 done
 
 clean_up
