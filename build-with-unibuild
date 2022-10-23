@@ -9,7 +9,8 @@ RESULTS_DIR='unibuild-repo'
 CONTAINER_UPDATE_SCRIPT=" export DEBIAN_FRONTEND=noninteractive && \
     curl -s http://downloads.perfsonar.net/debian/$REPO.gpg.key | apt-key add - && \
     curl -s -o /etc/apt/sources.list.d/$REPO.list http://downloads.perfsonar.net/debian/$REPO.list && \
-    apt-get update"
+    apt-get update && \
+    echo && echo"
 
 ### Variables
 if [ -z "$OS" ]; then
@@ -53,13 +54,14 @@ build_foreign() {
     sudo /bin/rm -rf $FULL_BUILD_DIR || exit 1
     mkdir -p $BUILD_DIR || exit 1
     echo -e "\n# Extracting ${p} in ${BUILD_DIR} to see if we must build it on other architectures."
-    # TODO: we should take the newest files present as olders might be existing from a previous run
-    if head -1 ${P_DIR}/${p}*.dsc | grep -q '(native)' ; then
+    # We take the newest entry, latest built package
+    dsc=`ls -1t ${P_DIR}/${p}*.dsc | head -1`
+    if head -1 $dsc | grep -q '(native)' ; then
         echo "This is a Debian native package, there is no orig tarball."
-        cat ${P_DIR}/${p}*.tar.xz | tar -Jx -C $BUILD_DIR --strip-components 1 -f -
+        cat ${dsc%.dsc}.debian.tar.xz | tar -Jx -C $BUILD_DIR --strip-components 1 -f -
     else
-        cat ${P_DIR}/${p}*.orig.* | tar -zx -C $BUILD_DIR --strip-components 1 -f -
-        cat ${P_DIR}/${p}*.debian.tar.xz | tar -Jx -C $BUILD_DIR -f -
+        cat ${dsc%-*}.orig.* | tar -zx -C $BUILD_DIR --strip-components 1 -f -
+        cat ${dsc%.dsc}.debian.tar.xz | tar -Jx -C $BUILD_DIR -f -
     fi
 
     for ARCH in ${ARCHES[@]}; do
@@ -116,14 +118,31 @@ for CONTAINER in ${CONTAINERS[@]}; do
     docker compose exec -dT ${CONTAINER} bash -c "$CONTAINER_UPDATE_SCRIPT" || exit 1
 done
 
-echo -e "\n\033[1mFirst loop on all additonal OSes (${OSes[@]}) we need to build specially crafted packages.\033[0m\n"
-for p in `find . -name Makefile -exec grep -q "(OS_PACKAGING),deb" {} \; -ls | sed 's/.*\.\/\(.*\)\/Makefile/\1/'`; do
+echo -e "\n\033[1mFirst loop on all additonal OSes (${OSes[@]}) that need specially crafted packages.\033[0m\n"
+# We get the list from all Makefile using the OS_PACKAGING macro
+# plus a diff between the unibuild-order on the main OS and the OSes (adding a trailing @ suffix with OS on which to build)
+# TODO: But how to make sure they are built in the correct order?
+for po in $(docker compose run --rm ${OS}_amd64 bash -c "unibuild order > uorder-mine; \
+                for otherOS in ${OSes}; do \
+                    unibuild --define DISTRO=Ubuntu --define MAJOR=\${otherOS#u} order > uorder-other; \
+                    diff uorder-mine uorder-other | awk -v os="\$otherOS" '/^> / {printf \"%s@%s\n\",\$2,os;}'; \
+                done; \
+                rm -f uorder-mine uorder-other" && \
+            find . -name Makefile -exec grep -q "(OS_PACKAGING),deb" {} \; -ls | sed 's/.*\.\/\(.*\)\/Makefile/\1/' \
+            ); do
     for otherOS in ${OSes[@]}; do
+        # Package name and OS on which to build
+        p=${po%@*}
+        o=${po#*@}
+        if [[ "$o" != "$p" && "$o" != "$otherOS" ]]; then
+            # If we don't have OS information or the OS is different than the one we're going to build for, we skip
+            break
+        fi
         # Build each package on main architecture first
         echo -e "\n===== Building \033[1mpackage ${p}\033[0m in \033[1m${otherOS}_${myARCH}\033[0m container ====="
         # This is not ideal to run the CONTAINER_UPDATE_SCRIPT each time we build a package,
         # TODO: but that's the only way to collect the return code (run vs exec).  :-/
-        docker compose run -T ${otherOS}_${myARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
+        docker compose run --rm -T ${otherOS}_${myARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
             unibuild build --start ${p} --stop ${p} \
             "
         if [ $? -ne 0 ]; then
@@ -142,7 +161,7 @@ done
 
 # Add pS repo (see TODO in otherOS loop above) and make the master build on the main OS with unibuild
 echo -e "\n===== \033[1mStarting the main full pScheduler Unibuild in ${OS}_${myARCH} container\033[0m =====\n"
-docker compose run -T ${OS}_${myARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
+docker compose run --rm -T ${OS}_${myARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
     unibuild build \
     "
 if [ $? -ne 0 ]; then

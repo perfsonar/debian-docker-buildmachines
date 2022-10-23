@@ -19,17 +19,13 @@ RELEASE=$2
 export REPREPRO_BASE_DIR=/var/local/repo
 
 # Add resulting packages to repository
-for dsc in `ls ${BUILD_RESULTS}/*.dsc`; do
-    # From the main Unibuild run
-    reprepro --waitforlock 12 -v includedsc ${RELEASE} $dsc
-done
-for changes in `ls ${BUILD_RESULTS}/*_[^s][a-z]*.changes`; do
-    # From the additional foreign arch builds
+for changes in `ls ${BUILD_RESULTS}/*.changes`; do
+    # If multiple .changes files exist for the same package, only the most recent one will be kept
     reprepro --waitforlock 12 -v include ${RELEASE} $changes
 done
 
-# Run Lintian on built package
-for c in `ls ${BUILD_RESULTS}/*_*.changes`; do
-    lintian --suppress-tags bad-distribution-in-changes-file $c
+# Run Lintian on built packages
+for changes in `ls ${BUILD_RESULTS}/*.changes`; do
+    lintian --suppress-tags bad-distribution-in-changes-file $changes
 done
 
