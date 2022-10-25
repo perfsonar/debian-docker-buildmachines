@@ -50,9 +50,9 @@ docker buildx create --driver docker-container --name perfbuild --use
 # Setup buildx for all supported architectures by installing and registering the latest qemu image
 # It uses the images from https://github.com/multiarch/qemu-user-static
 # Also see https://medium.com/@artur.klauser/building-multi-architecture-docker-images-with-buildx-27d80f7e2408 for more context
-# This should only be needed once per Docker daemon run,
-# but it shouldn't be a problem running it everytime we run the setup
-docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+# This should only be needed once per Docker daemon run, but it shouldn't be a problem running it everytime we run the setup
+# Docker Desktop should have it right out of the box, but not a problem adding it too.
+docker run --rm --privileged --pull always multiarch/qemu-user-static:latest --reset -p yes
 echo
 
 ### Verify new status

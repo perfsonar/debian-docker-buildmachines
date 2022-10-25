@@ -32,7 +32,13 @@ export OS OSes REPO
 if [ -z "$ARCHES" ]; then
     ARCHES='linux/amd64 linux/arm64 linux/armv7 linux/ppc64le'
 fi
-myARCH="amd64"
+if [ `uname -m` == "x86_64" ]; then
+    myARCH="amd64"
+else
+    echo "Building on a host other than x86_64 is currently not supported"
+    exit 1
+    # TODO: We should support running on arm64 architecture (Apple Silicon Macs for example)
+fi
 
 ### Some local subs
 # Clean up
@@ -40,6 +46,15 @@ clean_up() {
     # Shutdown all containers
     docker compose down --remove-orphans
     docker volume prune -f
+}
+
+# Fail
+fail() {
+    msg=$1
+    echo -e "\n\033[1;31mUnrecoverable error!\033[0m"
+    echo -e "$1\n"
+    clean_up
+    exit 1
 }
 
 # Build foreign architectures, a local function to avoid duplicate code
@@ -52,8 +67,7 @@ build_foreign() {
     fi
     # Extract source package
     # sudoers configuration needed for this to work
-    sudo /bin/rm -rf $FULL_BUILD_DIR || exit 1
-    mkdir -p $BUILD_DIR || exit 1
+    (sudo /bin/rm -rf ${FULL_BUILD_DIR} && mkdir -p ${FULL_BUILD_DIR}) || fail "Cannot setup an empty ${FULL_BUILD_DIR} dir, check your sudo rules."
     echo -e "\n# Extracting ${p} in ${BUILD_DIR} to see if we must build it on other architectures."
     # We take the newest entry, latest built package
     dsc=`ls -1t ${P_DIR}/${p}*.dsc | head -1`
@@ -111,15 +125,17 @@ for ARCH in ${ARCHES[@]}; do
         done
     fi
 done
-docker compose up -d $CONTAINERS || exit 1
+docker compose up -d $CONTAINERS || fail "Cannot start containers, please look at your Docker daemon."
 
 echo -e "\n\033[1mAdding the perfSONAR repository to all containers…\033[0m\n"
 for CONTAINER in ${CONTAINERS[@]}; do
     # Running in the background, while we'll make the master builds
-    docker compose exec -dT ${CONTAINER} bash -c "$CONTAINER_UPDATE_SCRIPT" || exit 1
+    docker compose exec -dT ${CONTAINER} bash -c "$CONTAINER_UPDATE_SCRIPT" || fail "Cannot exec the update script in ${CONTAINER}."
 done
 
 echo -e "\n\033[1mFirst loop on all additonal OSes (${OSes[@]}) that need specially crafted packages.\033[0m\n"
+# TODO: this should probably be better done by Unibuild itself
+sudo rm -f ${RESULTS_DIR}/unibuild/* || fail "Cannot empty ${RESULTS_DIR}/unibuild/ dir, check your sudo rules."
 # We get the list from all Makefile using the OS_PACKAGING macro
 # plus a diff between the unibuild-order on the main OS and the OSes (adding a trailing @ suffix with OS on which to build)
 # TODO: But how to make sure they are built in the correct order?
@@ -149,16 +165,14 @@ for po in $(docker compose run --rm ${OS}_amd64 bash -c "unibuild order > uorder
             unibuild build --start ${p} --stop ${p} \
             "
         if [ $? -ne 0 ]; then
-            echo -e "\nSomething went wrong with Unibuild on ${otherOS}_${myARCH} for package ${p}, I'll stop here.\n"
-            clean_up
-            exit 1
+            fail "Something went wrong with Unibuild on ${otherOS}_${myARCH} for package ${p}, I'll stop here."
         fi
         # The resulting package name is not the package dirname
         result=`head -1 ${RESULTS_DIR}/unibuild/debian-package-order`
         # We now need to build it on foreign architectures
-        build_foreign ${otherOS} ${result} ${p} || exit 1
+        build_foreign ${otherOS} ${result} ${p} || fail "Something went wrong building foreign arch package for ${result} from ${p}"
         # Remove leftovers to not confuse the next build
-        sudo rm -f ${RESULTS_DIR}/unibuild/* || exit 1
+        sudo rm -f ${RESULTS_DIR}/unibuild/* || fail "Cannot empty ${RESULTS_DIR}/unibuild/ dir, check your sudo rules."
     done
 done
 
@@ -168,17 +182,16 @@ docker compose run --rm -T ${OS}_${myARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && 
     unibuild build \
     "
 if [ $? -ne 0 ]; then
-    echo -e "\nSomething went wrong with Unibuild, I'll stop here.\n"
-    clean_up
-    exit 1
+    fail "Something went wrong with Unibuild, I'll stop here."
 fi
 echo -e "\n\n*** Unibuild: done! ***\n"
 
 # Then loop on all packages from the unibuild/build-order file
 # to see which one we need to build on foreign architectures
 for p in `cat ${RESULTS_DIR}/unibuild/debian-package-order`; do
-    build_foreign ${OS} ${p} || exit 1
+    build_foreign ${OS} ${p} || fail "Something went wrong building foreign arch package for ${p}"
 done
 
+echo "\n*** All done! ***\n"
 clean_up
 
