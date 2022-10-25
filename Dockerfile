@@ -46,7 +46,6 @@ RUN /bin/bash -c 'if [[ $(dpkg --print-architecture) != "ppc64el" ]]; then\
     apt-get install -y \
         --allow-downgrades \
         gpgv=2.2.12-1+deb10u1 \
-        libssl1.1=1.1.1n-0+deb10u1 \
         apt-utils \
         curl \
         gnupg \

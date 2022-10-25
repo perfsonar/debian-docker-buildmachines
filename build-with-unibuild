@@ -192,6 +192,6 @@ for p in `cat ${RESULTS_DIR}/unibuild/debian-package-order`; do
     build_foreign ${OS} ${p} || fail "Something went wrong building foreign arch package for ${p}"
 done
 
-echo "\n*** All done! ***\n"
+echo -e "\n*** All done! ***\n"
 clean_up
 
