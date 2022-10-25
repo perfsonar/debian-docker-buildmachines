@@ -14,10 +14,11 @@ CONTAINER_UPDATE_SCRIPT=" export DEBIAN_FRONTEND=noninteractive && \
 
 ### Variables
 if [ -z "$OS" ]; then
-    OS=d10
+    # Main OS we build on
+    OS=u18
 fi
 # Other OS to check for building packages
-OSes="u18 u20"
+OSes="d10 u20"
 if [ -z "$REPO" ]; then
     REPO=perfsonar-minor-snapshot
 fi
@@ -89,7 +90,7 @@ build_foreign() {
                 # Alternative would be to push packages to repository after each build instead of at the very end
                 # Or use a prepopulated snapshot repo
                 # But for now we do nothing (and that seems fine)
-                echo -e "\033[1mWe don't need to build ${p} for ${ARCH}.\033[0m We'll just skip it."
+                echo -e "\033[1mWe don't need to build ${p} for ${ARCH}.\033[0m Let's skip it."
             fi
         fi
     done
@@ -124,7 +125,9 @@ echo -e "\n\033[1mFirst loop on all additonal OSes (${OSes[@]}) that need specia
 # TODO: But how to make sure they are built in the correct order?
 for po in $(docker compose run --rm ${OS}_amd64 bash -c "unibuild order > uorder-mine; \
                 for otherOS in ${OSes}; do \
-                    unibuild --define DISTRO=Ubuntu --define MAJOR=\${otherOS#u} order > uorder-other; \
+                    [ \"\${otherOS:0:1}\" == \"d\" ] && myDISTRO=Debian; \
+                    [ \"\${otherOS:0:1}\" == \"u\" ] && myDISTRO=Ubuntu; \
+                    unibuild --define DISTRO=\$myDISTRO --define MAJOR=\${otherOS:1:2} order > uorder-other; \
                     diff uorder-mine uorder-other | awk -v os="\$otherOS" '/^> / {printf \"%s@%s\n\",\$2,os;}'; \
                 done; \
                 rm -f uorder-mine uorder-other" && \
