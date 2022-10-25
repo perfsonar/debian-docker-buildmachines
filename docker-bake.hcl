@@ -9,8 +9,9 @@
 variable "REPO" {
     default = "perfsonar-patch-snapshot"
 }
+# Debian Buster 10.11 is the latest to have the ppc64le architecture
 variable "OSimage" {
-    default = "debian:buster"
+    default = "debian:10.11"
 }
 variable "OSfamily" {
     default = regex_replace("${OSimage}", ":.*", "")
@@ -47,13 +48,13 @@ target "dual_build" {
     inherits = ["root_build"]
     platforms = ["linux/amd64", "linux/arm64"]
     output = ["type=registry"]
-    tags = ["docker.io/ntw0n/psbuild.${REPO}.${OSfamily}:latest", "docker.io/ntw0n/psbuild.${REPO}.${OSimage}"]
+    tags = ["docker.io/ntw0n/psbuild.${REPO}.${OSfamily}:latest"]
 }
 target "full_build" {
     inherits = ["root_build"]
     platforms = ["linux/amd64", "linux/arm64", "linux/arm/v7", "linux/ppc64le"]
     output = ["type=registry"]
-    tags = ["docker.io/ntw0n/psbuild.${REPO}.${OSfamily}:latest", "docker.io/ntw0n/psbuild.${REPO}.${OSimage}"]
+    tags = ["docker.io/ntw0n/psbuild.${REPO}.${OSfamily}:latest"]
 }
 target "single_test" {
     inherits = ["root_build"]

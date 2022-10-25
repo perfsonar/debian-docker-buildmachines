@@ -4,7 +4,8 @@
 # file.  Changes will then need to be pushed to GitHub to be effective.
 
 # We use debian:buster as the build OS
-declare -a OSimages=("debian:buster")
+# Debian Buster 10.11 is the latest to have the ppc64le architecture
+declare -a OSimages=("debian:10.11")
 #declare -a OSimages=("debian:buster" "ubuntu:bionic" "ubuntu:focal")
 
 # Make sure we have a repository
