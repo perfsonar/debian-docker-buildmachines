@@ -133,13 +133,14 @@ for CONTAINER in ${CONTAINERS[@]}; do
     docker compose exec -dT ${CONTAINER} bash -c "$CONTAINER_UPDATE_SCRIPT" || fail "Cannot exec the update script in ${CONTAINER}."
 done
 
-echo -e "\n\033[1mFirst loop on all additonal OSes (${OSes[@]}) that need specially crafted packages.\033[0m\n"
 # TODO: this should probably be better done by Unibuild itself
 sudo rm -f ${RESULTS_DIR}/unibuild/* || fail "Cannot empty ${RESULTS_DIR}/unibuild/ dir, check your sudo rules."
+
+echo -e "\n\033[1mFirst loop on all additonal OSes\033[0m (${OSes[@]}) \033[1mthat need specially crafted packages.\033[0m"
 # We get the list from all Makefile using the OS_PACKAGING macro
 # plus a diff between the unibuild-order on the main OS and the OSes (adding a trailing @ suffix with OS on which to build)
 # TODO: But how to make sure they are built in the correct order?
-for po in $(docker compose run --rm ${OS}_amd64 bash -c "unibuild order > uorder-mine; \
+pos=$(docker compose run --rm ${OS}_amd64 bash -c "unibuild order > uorder-mine; \
                 for otherOS in ${OSes}; do \
                     [ \"\${otherOS:0:1}\" == \"d\" ] && myDISTRO=Debian; \
                     [ \"\${otherOS:0:1}\" == \"u\" ] && myDISTRO=Ubuntu; \
@@ -147,8 +148,9 @@ for po in $(docker compose run --rm ${OS}_amd64 bash -c "unibuild order > uorder
                     diff uorder-mine uorder-other | awk -v os="\$otherOS" '/^> / {printf \"%s@%s\n\",\$2,os;}'; \
                 done; \
                 rm -f uorder-mine uorder-other" && \
-            find . -name Makefile -exec grep -q "(OS_PACKAGING),deb" {} \; -ls | sed 's/.*\.\/\(.*\)\/Makefile/\1/' \
-            ); do
+                find . -name Makefile -exec grep -q "(OS_PACKAGING),deb" {} \; -ls | sed 's/.*\.\/\(.*\)\/Makefile/\1/')
+echo -e "We're going to build the following packages first:\n$pos"
+for po in $pos; do
     for otherOS in ${OSes[@]}; do
         # Package name and OS on which to build
         p=${po%@*}
@@ -158,7 +160,7 @@ for po in $(docker compose run --rm ${OS}_amd64 bash -c "unibuild order > uorder
             break
         fi
         # Build each package on main architecture first
-        echo -e "\n===== Building \033[1mpackage ${p}\033[0m in \033[1m${otherOS}_${myARCH}\033[0m container ====="
+        echo -e "\n===== Building package \033[1m${p}\033[0m in \033[1m${otherOS}_${myARCH}\033[0m container ====="
         # This is not ideal to run the CONTAINER_UPDATE_SCRIPT each time we build a package,
         # TODO: but that's the only way to collect the return code (run vs exec).  :-/
         docker compose run --rm -T ${otherOS}_${myARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
