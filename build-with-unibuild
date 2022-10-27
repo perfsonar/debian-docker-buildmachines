@@ -3,6 +3,9 @@
 # Note: this script needs at least 2 sudoers whitelisting to be able to run under Jenkins
 
 ### Constants
+if [ -z "$REPO" ]; then
+    REPO=perfsonar-minor-snapshot
+fi
 BUILD_DIR='multiarch_build'
 FULL_BUILD_DIR=`pwd`"/$BUILD_DIR"
 RESULTS_DIR='unibuild-repo'
@@ -19,9 +22,6 @@ if [ -z "$OS" ]; then
 fi
 # Other OS to check for building packages
 OSes="d10 u20"
-if [ -z "$REPO" ]; then
-    REPO=perfsonar-minor-snapshot
-fi
 export OS OSes REPO
 
 # By default, the setup is to build packages for all the supported architectures
@@ -139,10 +139,11 @@ sudo rm -f ${RESULTS_DIR}/unibuild/* || fail "Cannot empty ${RESULTS_DIR}/unibui
 
 echo -e "\n\033[1mFirst loop on all additonal OSes\033[0m (${OSes[@]}) \033[1mthat need specially crafted packages.\033[0m"
 # We get the list from all Makefile using the OS_PACKAGING macro
-# plus a diff between the unibuild-order on the main OS and the OSes (adding a trailing @ suffix with OS on which to build)
-# TODO: But how to make sure they are built in the correct order?
-# TODO: and that there is no duplicate (ex: ethr)?
-opp=$(find . -name Makefile -exec grep -q "(OS_PACKAGING),deb" {} \; -ls | sed 's|.*\./\(.*\)/Makefile|\1|' | xargs)
+# plus a diff between the unibuild-order on the main OS and the OSes, excluding the already listed packages
+# And we add a trailing @ suffix with the OS on which to build
+# TODO: How to make sure they are built in the correct order in case of dependencies?
+find . -name Makefile -exec grep -q "(OS_PACKAGING),deb" {} \; -ls | sed 's|.*\./\(.*\)/Makefile|\1|' > os-specific-packages
+opp=$(xargs < os-specific-packages)
 pos=$(docker compose run --rm -T ${OS}_${myARCH} bash -c "\
                 unibuild order > uorder-mine; \
                 for otherOS in ${OSes}; do \
@@ -152,36 +153,31 @@ pos=$(docker compose run --rm -T ${OS}_${myARCH} bash -c "\
                     for p in ${opp}; do \
                         grep \$p uorder-other | sed \"s/\(.*\)/\1@\$otherOS/\"; \
                     done; \
-                    diff uorder-mine uorder-other | awk -v os=\"\$otherOS\" '/^> / {printf \"%s@%s\n\",\$2,os;}'; \
+                    diff uorder-mine uorder-other | grep -v -f os-specific-packages | awk -v os=\"\$otherOS\" '/^> / {printf \"%s@%s\n\",\$2,os;}'; \
+                    diff uorder-mine uorder-other | grep -v -f os-specific-packages | awk '/^> / {print \$2}' >> os-specific-packages; \
                 done; \
-                rm -f uorder-mine uorder-other")
+                rm -f uorder-mine uorder-other os-specific-packages")
 echo -e "We're going to build the following packages first:\n$pos"
 for po in $pos; do
-    for otherOS in ${OSes[@]}; do
-        # Package name and OS on which to build
-        p=${po%@*}
-        o=${po#*@}
-        if [[ "$o" != "$p" && "$o" != "$otherOS" ]]; then
-            # If we don't have OS information or the OS is different than the one we're going to build for, we skip
-            break
-        fi
-        # Build each package on main architecture first
-        echo -e "\n===== Building package \033[1m${p}\033[0m in \033[1m${otherOS}_${myARCH}\033[0m container ====="
-        # This is not ideal to run the CONTAINER_UPDATE_SCRIPT each time we build a package,
-        # TODO: but that's the only way to collect the return code (run vs exec).  :-/
-        docker compose run --rm -T ${otherOS}_${myARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
-            unibuild build --start ${p} --stop ${p} \
-            "
-        if [ $? -ne 0 ]; then
-            fail "Something went wrong with Unibuild on ${otherOS}_${myARCH} for package ${p}, I'll stop here."
-        fi
-        # The resulting package name is not the package dirname
-        result=`head -1 ${RESULTS_DIR}/unibuild/debian-package-order`
-        # We now need to build it on foreign architectures
-        build_foreign ${otherOS} ${result} ${p} || fail "Something went wrong building foreign arch package for ${result} from ${p}"
-        # Remove leftovers to not confuse the next build
-        sudo rm -f ${RESULTS_DIR}/unibuild/* || fail "Cannot empty ${RESULTS_DIR}/unibuild/ dir, check your sudo rules."
-    done
+    # Package name and OS on which to build
+    package=${po%@*}
+    otherOS=${po#*@}
+    # Build each package on main architecture first
+    echo -e "\n===== Building package \033[1m${package}\033[0m in \033[1m${otherOS}_${myARCH}\033[0m container ====="
+    # This is not ideal to run the CONTAINER_UPDATE_SCRIPT each time we build a package,
+    # TODO: but that's the only way to collect the return code (run vs exec).  :-/
+    docker compose run --rm -T ${otherOS}_${myARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
+        unibuild build --start ${package} --stop ${package} \
+        "
+    if [ $? -ne 0 ]; then
+        fail "Something went wrong with Unibuild on ${otherOS}_${myARCH} for package ${package}, I'll stop here."
+    fi
+    # The resulting package name is not the package dirname
+    result=`head -1 ${RESULTS_DIR}/unibuild/debian-package-order`
+    # We now need to build it on foreign architectures
+    build_foreign ${otherOS} ${result} ${package} || fail "Something went wrong building foreign arch package for ${result} from ${package}"
+    # Remove leftovers to not confuse the next build
+    sudo rm -f ${RESULTS_DIR}/unibuild/* || fail "Cannot empty ${RESULTS_DIR}/unibuild/ dir, check your sudo rules."
 done
 
 # Add pS repo (see TODO in otherOS loop above) and make the master build on the main OS with unibuild
