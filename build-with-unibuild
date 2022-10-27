@@ -67,7 +67,8 @@ build_foreign() {
     fi
     # Extract source package
     # sudoers configuration needed for this to work
-    (sudo /bin/rm -rf ${FULL_BUILD_DIR} && mkdir -p ${FULL_BUILD_DIR}) || fail "Cannot setup an empty ${FULL_BUILD_DIR} dir, check your sudo rules."
+    sudo /bin/rm -rf ${FULL_BUILD_DIR} || fail "Cannot remove previous ${FULL_BUILD_DIR} dir, check your sudo rules."
+    mkdir -p ${FULL_BUILD_DIR} || fail "Cannot setup an empty ${FULL_BUILD_DIR} dir."
     echo -e "\n# Extracting ${p} in ${BUILD_DIR} to see if we must build it on other architectures."
     # We take the newest entry, latest built package
     dsc=`ls -1t ${P_DIR}/${p}*.dsc | head -1`
