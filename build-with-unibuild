@@ -141,15 +141,20 @@ echo -e "\n\033[1mFirst loop on all additonal OSes\033[0m (${OSes[@]}) \033[1mth
 # We get the list from all Makefile using the OS_PACKAGING macro
 # plus a diff between the unibuild-order on the main OS and the OSes (adding a trailing @ suffix with OS on which to build)
 # TODO: But how to make sure they are built in the correct order?
-pos=$(docker compose run --rm ${OS}_amd64 bash -c "unibuild order > uorder-mine; \
+opp=`find -X . -name Makefile -exec grep -q "(OS_PACKAGING),deb" {} \; -ls | sed 's|.*\./\(.*\)/Makefile|\1|' | xargs`
+pos=$(docker compose run --rm ${OS}_amd64 bash -c "\
+                unibuild order > uorder-mine; \
                 for otherOS in ${OSes}; do \
                     [ \"\${otherOS:0:1}\" == \"d\" ] && myDISTRO=Debian; \
                     [ \"\${otherOS:0:1}\" == \"u\" ] && myDISTRO=Ubuntu; \
                     unibuild --define DISTRO=\$myDISTRO --define MAJOR=\${otherOS:1:2} order > uorder-other; \
-                    diff uorder-mine uorder-other | awk -v os="\$otherOS" '/^> / {printf \"%s@%s\n\",\$2,os;}'; \
+                    for p in ${opp}; do \
+                        grep \$p uorder-other | sed \"s/\(.*\)/\1@\$otherOS/\"; \
+                    done; \
+                    diff uorder-mine uorder-other | awk -v os=\"\$otherOS\" '/^> / {printf \"%s@%s\n\",\$2,os;}'; \
                 done; \
-                rm -f uorder-mine uorder-other" && \
-                find . -name Makefile -exec grep -q "(OS_PACKAGING),deb" {} \; -ls | sed 's/.*\.\/\(.*\)\/Makefile/\1/')
+                rm -f uorder-mine uorder-other")
+                        #awk -v p=\"\$p\" -v os=\"\$otherOS\" '/\$p/ {printf \"%s@%s\n\",p,os;}' uorder-other; \
 echo -e "We're going to build the following packages first:\n$pos"
 for po in $pos; do
     for otherOS in ${OSes[@]}; do
