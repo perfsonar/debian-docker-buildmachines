@@ -141,7 +141,8 @@ echo -e "\n\033[1mFirst loop on all additonal OSes\033[0m (${OSes[@]}) \033[1mth
 # We get the list from all Makefile using the OS_PACKAGING macro
 # plus a diff between the unibuild-order on the main OS and the OSes (adding a trailing @ suffix with OS on which to build)
 # TODO: But how to make sure they are built in the correct order?
-opp=`find . -name Makefile -exec grep -q "(OS_PACKAGING),deb" {} \; -ls | sed 's|.*\./\(.*\)/Makefile|\1|' | xargs`
+# TODO: and that there is no duplicate (ex: ethr)?
+opp=$(find . -name Makefile -exec grep -q "(OS_PACKAGING),deb" {} \; -ls | sed 's|.*\./\(.*\)/Makefile|\1|' | xargs)
 pos=$(docker compose run --rm -T ${OS}_${myARCH} bash -c "\
                 unibuild order > uorder-mine; \
                 for otherOS in ${OSes}; do \
