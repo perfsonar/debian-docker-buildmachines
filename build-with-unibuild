@@ -1,19 +1,31 @@
 #!/usr/bin/env bash
 
-# Note: this script needs at least 2 sudoers whitelisting to be able to run under Jenkins
+# This script will build the package from the current repository using Unibuild.
+#
+# Note: it needs at least 2 sudoers whitelisting to be able to run under Jenkins.
 
 ### Constants
 if [ -z "$REPO" ]; then
     REPO=perfsonar-minor-snapshot
 fi
+MY_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+if [ -z "$COMPOSE_FILE" ]; then
+    # We use Docker compose file that goes along this script.
+    COMPOSE_FILE="${MY_DIR}/docker-compose-unibuild.yml"
+fi
+if [ -z "$DIR_TO_BE_BUILT" ]; then
+    # The git repository we will build, we're supposed to be running from it.
+    # This is used in the Docker compose file to mount as volume
+    DIR_TO_BE_BUILT=`pwd`
+fi
 BUILD_DIR='multiarch_build'
-FULL_BUILD_DIR=`pwd`"/$BUILD_DIR"
+FULL_BUILD_DIR="${DIR_TO_BE_BUILT}/$BUILD_DIR"
 RESULTS_DIR='unibuild-repo'
 CONTAINER_UPDATE_SCRIPT=" export DEBIAN_FRONTEND=noninteractive && \
     curl -s http://downloads.perfsonar.net/debian/$REPO.gpg.key | apt-key add - && \
     curl -s -o /etc/apt/sources.list.d/$REPO.list http://downloads.perfsonar.net/debian/$REPO.list && \
     apt-get update && \
-    echo && echo"
+    echo && echo "
 
 ### Variables
 if [ -z "$OS" ]; then
@@ -22,7 +34,7 @@ if [ -z "$OS" ]; then
 fi
 # Other OS to check for building packages
 OSes="d10 u20"
-export OS OSes REPO
+export OS OSes REPO COMPOSE_FILE DIR_TO_BE_BUILT
 
 # By default, the setup is to build packages for all the supported architectures
 # If you want to build for different ones, you should call the scripts with the ARCHES
@@ -33,7 +45,7 @@ if [ -z "$ARCHES" ]; then
     ARCHES='linux/amd64 linux/arm64 linux/armv7 linux/ppc64le'
 fi
 if [ `uname -m` == "x86_64" ]; then
-    myARCH="amd64"
+    MY_ARCH="amd64"
 else
     echo "Building on a host other than x86_64 is currently not supported"
     exit 1
@@ -83,7 +95,7 @@ build_foreign() {
     for ARCH in ${ARCHES[@]}; do
         LARCH="${ARCH#*\/}"
         LARCH="${LARCH/\/}"
-        if [[ $LARCH != "$myARCH" ]]; then
+        if [[ $LARCH != "$MY_ARCH" ]]; then
             if grep '^Architecture: ' $BUILD_DIR/debian/control | grep -qv 'Architecture: all'; then
                 # We need to build this package for all architectures
                 echo -e "\n===== Building \033[1mbinary package ${p}\033[0m on \033[1m${ARCH}\033[0m in \033[1m${OS}_${LARCH}\033[0m container ====="
@@ -119,7 +131,7 @@ build_foreign() {
 CONTAINERS=""
 for ARCH in ${ARCHES[@]}; do
     LARCH="${ARCH#*\/}"
-    if [[ $LARCH != "$myARCH" ]]; then
+    if [[ $LARCH != "$MY_ARCH" ]]; then
         CONTAINERS+=${OS}_${LARCH/\/}" "
         for LOS in ${OSes[@]}; do
             CONTAINERS+=${LOS}_${LARCH/\/}" "
@@ -144,7 +156,7 @@ echo -e "\n\033[1mFirst loop on all additonal OSes\033[0m (${OSes[@]}) \033[1mth
 # TODO: How to make sure they are built in the correct order in case of dependencies?
 find . -name Makefile -exec grep -q "(OS_PACKAGING),deb" {} \; -ls | sed 's|.*\./\(.*\)/Makefile|\1|' > os-specific-packages
 opp=$(xargs < os-specific-packages)
-pos=$(docker compose run --rm -T ${OS}_${myARCH} bash -c "\
+pos=$(docker compose run --rm -T ${OS}_${MY_ARCH} bash -c "\
                 unibuild order > uorder-mine; \
                 for otherOS in ${OSes}; do \
                     [ \"\${otherOS:0:1}\" == \"d\" ] && myDISTRO=Debian; \
@@ -157,20 +169,24 @@ pos=$(docker compose run --rm -T ${OS}_${myARCH} bash -c "\
                     diff uorder-mine uorder-other | grep -v -f os-specific-packages | awk '/^> / {print \$2}' >> os-specific-packages; \
                 done; \
                 rm -f uorder-mine uorder-other os-specific-packages")
-echo -e "We're going to build the following packages first:\n$pos"
+if [ -z "$pos" ]; then
+    echo -e "We're going to build the following packages first:\n$pos"
+else
+    echo -e "No specially crafted package needed."
+fi
 for po in $pos; do
     # Package name and OS on which to build
     package=${po%@*}
     otherOS=${po#*@}
     # Build each package on main architecture first
-    echo -e "\n===== Building package \033[1m${package}\033[0m in \033[1m${otherOS}_${myARCH}\033[0m container ====="
+    echo -e "\n===== Building package \033[1m${package}\033[0m in \033[1m${otherOS}_${MY_ARCH}\033[0m container ====="
     # This is not ideal to run the CONTAINER_UPDATE_SCRIPT each time we build a package,
     # TODO: but that's the only way to collect the return code (run vs exec).  :-/
-    docker compose run --rm -T ${otherOS}_${myARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
+    docker compose run --rm -T ${otherOS}_${MY_ARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
         unibuild build --start ${package} --stop ${package} \
         "
     if [ $? -ne 0 ]; then
-        fail "Something went wrong with Unibuild on ${otherOS}_${myARCH} for package ${package}, I'll stop here."
+        fail "Something went wrong with Unibuild on ${otherOS}_${MY_ARCH} for package ${package}, I'll stop here."
     fi
     # The resulting package name is not the package dirname
     result=`head -1 ${RESULTS_DIR}/unibuild/debian-package-order`
@@ -181,8 +197,8 @@ for po in $pos; do
 done
 
 # Add pS repo (see TODO in otherOS loop above) and make the master build on the main OS with unibuild
-echo -e "\n===== \033[1mStarting the main full pScheduler Unibuild in ${OS}_${myARCH} container\033[0m =====\n"
-docker compose run --rm -T ${OS}_${myARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
+echo -e "\n===== \033[1mStarting the main full pScheduler Unibuild in ${OS}_${MY_ARCH} container\033[0m =====\n"
+docker compose run --rm -T ${OS}_${MY_ARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
     unibuild build \
     "
 if [ $? -ne 0 ]; then
