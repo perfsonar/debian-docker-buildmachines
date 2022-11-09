@@ -41,6 +41,7 @@ fi
 source_and_binary=true
 jenkins_build=false
 keep_builds=false
+tagged_release=false
 OTHEROPT=1
 
 # Parsing options
@@ -51,7 +52,8 @@ while getopts "BDhjb:t:ksu" OPT; do
         j) jenkins_build=true ;;
         k) keep_builds=true ;;
 # The other options will get passed to ps-source-builder so we must not shift them
-        b|t) ((OTHEROPT+=2)) ;;
+        b) ((OTHEROPT+=2)) ;;
+        t) tagged_release=true && ((OTHEROPT+=2)) ;;
         s|u) ((OTHEROPT+=1)) ;;
         h)
             show_help >&2
@@ -78,8 +80,11 @@ if [ $? -ne 0 ]; then
 fi
 
 # Which pS repo are we building for?
-# TODO: when a tag is given, we should build from staging
-REPO=`awk '/debian-branch / {gsub(".[0-9]+$","",$3); print "perfsonar-"$3"-snapshot"}' $GBPCONF`
+if $tagged_release ; then
+    REPO=`awk '/debian-branch / {gsub(".[0-9]+$","",$3); print "perfsonar-"$3"-staging"}' $GBPCONF`
+else
+    REPO=`awk '/debian-branch / {gsub(".[0-9]+$","",$3); print "perfsonar-"$3"-snapshot"}' $GBPCONF`
+fi
 
 # Which OS are we building on?
 OSimage=`awk '/ DIST=/ {gsub("DIST=","",$3); print $3}' $GBPCONF`

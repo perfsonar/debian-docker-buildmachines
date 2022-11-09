@@ -18,6 +18,7 @@ if [ -z "$DIR_TO_BE_BUILT" ]; then
     # This is used in the Docker compose file to mount as volume
     DIR_TO_BE_BUILT=`pwd`
 fi
+PROJECT=${DIR_TO_BE_BUILT##*\/}
 BUILD_DIR='multiarch_build'
 FULL_BUILD_DIR="${DIR_TO_BE_BUILT}/$BUILD_DIR"
 RESULTS_DIR='unibuild-repo'
@@ -65,6 +66,7 @@ fail() {
     msg=$1
     echo -e "\n\033[1;31mUnrecoverable error!\033[0m"
     echo -e "$1\n"
+    # TODO: Can we add a debug option to drop into a shell inside the container when an error occurs?
     clean_up
     exit 1
 }
@@ -138,13 +140,14 @@ for ARCH in ${ARCHES[@]}; do
         done
     fi
 done
-docker compose up -d $CONTAINERS || fail "Cannot start containers, please look at your Docker daemon."
-
-echo -e "\n\033[1mAdding the perfSONAR repository to all containers…\033[0m\n"
-for CONTAINER in ${CONTAINERS[@]}; do
-    # Running in the background, while we'll make the master builds
-    docker compose exec -dT ${CONTAINER} bash -c "$CONTAINER_UPDATE_SCRIPT" || fail "Cannot exec the update script in ${CONTAINER}."
-done
+if [ -n "$CONTAINERS" ]; then
+    docker compose up -d $CONTAINERS || fail "Cannot start containers, please look at your Docker daemon."
+    echo -e "\n\033[1mAdding the perfSONAR repository to all containers…\033[0m\n"
+    for CONTAINER in ${CONTAINERS[@]}; do
+        # Running in the background, while we'll make the master builds
+        docker compose exec -dT ${CONTAINER} bash -c "$CONTAINER_UPDATE_SCRIPT" || fail "Cannot exec the update script in ${CONTAINER}."
+    done
+fi
 
 # TODO: this should probably be better done by Unibuild itself
 sudo rm -f ${RESULTS_DIR}/unibuild/* || fail "Cannot empty ${RESULTS_DIR}/unibuild/ dir, check your sudo rules."
@@ -170,9 +173,9 @@ pos=$(docker compose run --rm -T ${OS}_${MY_ARCH} bash -c "\
                 done; \
                 rm -f uorder-mine uorder-other os-specific-packages")
 if [ -z "$pos" ]; then
-    echo -e "We're going to build the following packages first:\n$pos"
-else
     echo -e "No specially crafted package needed."
+else
+    echo -e "We're going to build the following packages first:\n$pos"
 fi
 for po in $pos; do
     # Package name and OS on which to build
@@ -197,7 +200,7 @@ for po in $pos; do
 done
 
 # Add pS repo (see TODO in otherOS loop above) and make the master build on the main OS with unibuild
-echo -e "\n===== \033[1mStarting the main full pScheduler Unibuild in ${OS}_${MY_ARCH} container\033[0m =====\n"
+echo -e "\n===== \033[1mStarting the main full ${PROJECT} Unibuild build in ${OS}_${MY_ARCH} container\033[0m =====\n"
 docker compose run --rm -T ${OS}_${MY_ARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
     unibuild build \
     "
