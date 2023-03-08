@@ -1,8 +1,39 @@
 #!/usr/bin/env bash
 
-# This script will build the package from the current repository using Unibuild.
-#
-# Note: it needs at least 2 sudoers whitelisting to be able to run under Jenkins.
+# Usage info
+show_help() {
+    cat << EOF
+    Usage: ${0##*/} [-o OSname]
+    This script will build the package from the current repository using Unibuild.
+    Requirements:
+        - The source branch to build from need to be checked out
+        - Functionnal docker buildx setup
+        - Needs at least 2 sudoers whitelisting to be able to run under Jenkins.
+
+    Defaults values:
+        - Support OS dependants builds on D10 and U20 (only packages needed to be compiled specifically
+          on these OS are going to be tailored built.
+        - Solves build and installation dependencies from the perfsonar-minor-snapshot repository
+        - Build on all 4 arches we support for Debian and Ubuntu: amd64, arm64, armhf and ppc64el
+        - Use the docker-compose-unibuild.yml setup from the docker-debian-buildmachines repo
+        - Build the current directory
+
+    Arguments understood:
+        -o OS to build on (defaults to u18, the oldes OS we support), needs to be in lower case
+           short form like d11 or u22
+
+    Environment variables that can be set:
+        - limit the number of arches built, ex: ARCHES='linux/arm64 linux/amd64'
+        - build for a different set of other OSes: OSes="d11 u22"
+        - use a different pS repository to solve dependencies: REPO="perfsonar-5.0-staging"
+        - use a different Docker compose file: COMPOSE_FILE="path/to/compose-file.yml"
+        - build a given directory: DIR_TO_BE_BUILT="/full/path/dir/to/be/built"
+          
+    Some examples:
+    ../debian-docker-buildmachines/build-with-unibuild
+    ARCHES='linux/arm64 linux/amd64' ../debian-docker-buildmachines/build-with-unibuild
+EOF
+}
 
 ### Constants
 if [ -z "$REPO" ]; then
@@ -28,13 +59,27 @@ CONTAINER_UPDATE_SCRIPT=" export DEBIAN_FRONTEND=noninteractive && \
     apt-get update && \
     echo && echo "
 
-### Variables
-if [ -z "$OS" ]; then
-    # Main OS we build on
-    OS=u18
+# Variables and options
+OS=u18
+# Parsing options
+while getopts "ho:" OPT; do
+    case $OPT in
+        o) OS="$OPTARG" ;;
+        h)
+            show_help >&2
+            exit 1 ;;
+    esac
+done
+shift $((OPTIND-1))
+
+if [[ ! "$OS" =~ ^(d10|d11|u18|u20|u22)$ ]]; then
+    echo "OS $OS not supported for build"
+    exit 1
 fi
 # Other OS to check for building packages
-OSes="d10 u20"
+if [ -z "$OSes" ]; then
+    OSes="d10 u20"
+fi
 export OS OSes REPO COMPOSE_FILE DIR_TO_BE_BUILT
 
 # By default, the setup is to build packages for all the supported architectures
@@ -142,7 +187,7 @@ for ARCH in ${ARCHES[@]}; do
 done
 if [ -n "$CONTAINERS" ]; then
     docker compose up -d $CONTAINERS || fail "Cannot start containers, please look at your Docker daemon."
-    echo -e "\n\033[1mAdding the perfSONAR repository to all containers…\033[0m\n"
+    echo -e "\n\033[1mAdding the perfSONAR repository to all containers (background task)…\033[0m\n"
     for CONTAINER in ${CONTAINERS[@]}; do
         # Running in the background, while we'll make the master builds
         docker compose exec -dT ${CONTAINER} bash -c "$CONTAINER_UPDATE_SCRIPT" || fail "Cannot exec the update script in ${CONTAINER}."
@@ -202,8 +247,7 @@ done
 # Add pS repo (see TODO in otherOS loop above) and make the master build on the main OS with unibuild
 echo -e "\n===== \033[1mStarting the main full ${PROJECT} Unibuild build in ${OS}_${MY_ARCH} container\033[0m =====\n"
 docker compose run --rm -T ${OS}_${MY_ARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
-    unibuild build \
-    "
+    unibuild build"
 if [ $? -ne 0 ]; then
     fail "Something went wrong with Unibuild, I'll stop here."
 fi
