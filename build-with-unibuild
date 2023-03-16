@@ -244,8 +244,8 @@ for po in $pos; do
     sudo rm -f ${RESULTS_DIR}/unibuild/* || fail "Cannot empty ${RESULTS_DIR}/unibuild/ dir, check your sudo rules."
 done
 
-# Special case for perfsonar-archive were we don't want to install resulting package
-if [[ "${PROJECT}" = "archive" ]]; then
+# Special cases to skip installing opensearch in a Unibuild container as it currently fails as missing systemd
+if [[ "${PROJECT}" =~ ^(archive|bundles|toolkit)$ ]]; then
     UNIBUILD_SEQ="make clean && unibuild make && mkdir /app/unibuild-repo && unibuild gather /app/unibuild-repo"
 else
     UNIBUILD_SEQ="unibuild build"
