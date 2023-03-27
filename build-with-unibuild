@@ -28,6 +28,7 @@ show_help() {
         - use a different pS repository to solve dependencies: REPO="perfsonar-5.0-staging"
         - use a different Docker compose file: COMPOSE_FILE="path/to/compose-file.yml"
         - build a given directory: DIR_TO_BE_BUILT="/full/path/dir/to/be/built"
+        - some Unibuild options: UNIBUILD_OPTS
           
     Some examples:
     ../debian-docker-buildmachines/build-with-unibuild
@@ -40,6 +41,10 @@ if [ -z "$REPO" ]; then
     REPO=perfsonar-minor-snapshot
 fi
 MY_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+if [ -z "$UNIBUILD_OPTS" ]; then
+    # Make sure it is defined
+    UNIBUILD_OPTS=""
+fi
 if [ -z "$COMPOSE_FILE" ]; then
     # We use Docker compose file that goes along this script.
     COMPOSE_FILE="${MY_DIR}/docker-compose-unibuild.yml"
@@ -60,6 +65,7 @@ CONTAINER_UPDATE_SCRIPT=" export DEBIAN_FRONTEND=noninteractive && \
     echo && echo "
 
 # Variables and options
+# Main build OS (should be oldest supported)
 OS=u18
 # Parsing options
 while getopts "ho:" OPT; do
@@ -231,7 +237,7 @@ for po in $pos; do
     # This is not ideal to run the CONTAINER_UPDATE_SCRIPT each time we build a package,
     # TODO: but that's the only way to collect the return code (run vs exec).  :-/
     docker compose run --rm -T ${otherOS}_${MY_ARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
-        unibuild build --start ${package} --stop ${package} \
+        unibuild $UNIBUILD_OPTS build --start ${package} --stop ${package} \
         "
     if [ $? -ne 0 ]; then
         fail "Something went wrong with Unibuild on ${otherOS}_${MY_ARCH} for package ${package}, I'll stop here."
@@ -246,9 +252,9 @@ done
 
 # Special cases to skip installing opensearch in a Unibuild container as it currently fails as missing systemd
 if [[ "${PROJECT}" =~ ^(archive|bundles|toolkit)$ ]]; then
-    UNIBUILD_SEQ="make clean && unibuild make && mkdir /app/unibuild-repo && unibuild gather /app/unibuild-repo"
+    UNIBUILD_SEQ="make clean && unibuild $UNIBUILD_OPTS make && mkdir /app/unibuild-repo && unibuild gather /app/unibuild-repo"
 else
-    UNIBUILD_SEQ="unibuild build"
+    UNIBUILD_SEQ="unibuild $UNIBUILD_OPTS build"
 fi
 # Add pS repo (see TODO in otherOS loop above) and make the master build on the main OS with unibuild
 echo -e "\n===== \033[1mStarting the main full ${PROJECT} Unibuild build in ${OS}_${MY_ARCH} container\033[0m =====\n"
