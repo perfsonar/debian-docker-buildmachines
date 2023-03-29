@@ -4,7 +4,7 @@
 # Changes will then need to be pushed to GitHub to be effective.
 
 # Debian Buster 10.11 is the latest to have the ppc64le architecture
-declare -a OSimages=("d10:latest" "u18:debian-tarball" "u20:latest")
+declare -a OSimages=("d10:debian-tarball" "u18:debian-tarball" "u20:debian-tarball")
 export REGISTRY="ghcr.io/perfsonar/unibuild/"
 COMPOSE=docker-compose-unibuild.yml
 
