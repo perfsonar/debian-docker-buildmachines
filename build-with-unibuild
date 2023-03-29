@@ -204,6 +204,7 @@ fi
 # The solution devised here is not working for an empty perfSONAR repository.
 # This is because we would need to first build packages that those packages depends on
 # And these build need to go through the regular Unibuild process
+# Currently (20230328) the packages that need to be built first are: ethr, jq, oniguruma and python-vine
 sudo rm -f ${RESULTS_DIR}/unibuild/* || fail "Cannot empty ${RESULTS_DIR}/unibuild/ dir, check your sudo rules."
 
 echo -e "\n\033[1mFirst loop on all additonal OSes\033[0m (${OSes[@]}) \033[1mthat need specially crafted packages.\033[0m"

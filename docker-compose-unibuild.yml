@@ -48,22 +48,22 @@ services:
     volumes: *default-volumes
   u18_amd64:
     platform: "linux/amd64"
-    image: ghcr.io/perfsonar/unibuild/u18:latest@sha256:c752c6fcdecff176236dbc727268bf64bde35ba4b909661b5f365f2deed5ae37
+    image: ghcr.io/perfsonar/unibuild/u18:debian-tarball@sha256:24672ba37a256f0c9b9fa8520102c6cc0ea93c29a9c1e7880fd5f23a9afb93ad
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   u18_arm64:
     platform: "linux/arm64"
-    image: ghcr.io/perfsonar/unibuild/u18:latest@sha256:eca0581cc87b606cb79420833bb0045ace2168213a531effe39f69b178037f2a
+    image: ghcr.io/perfsonar/unibuild/u18:debian-tarball@sha256:1d691c7f850ce432b4a0ed842f071ffe54102648bb902d58c498a72cb2377076
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   u18_armv7:
     platform: "linux/arm/v7"
-    image: ghcr.io/perfsonar/unibuild/u18:latest@sha256:49d0a515fa9d7705dba6bfed51a438f6fdd67d915ff5326aa7adf8919d4265d6
+    image: ghcr.io/perfsonar/unibuild/u18:debian-tarball@sha256:90b6019448dbf70f12e295b72f8cb0dbb5555962c950fdac5c8b7e738487a4a4
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   u18_ppc64le:
     platform: "linux/ppc64le"
-    image: ghcr.io/perfsonar/unibuild/u18:latest@sha256:434c964d81b019e1d20e6489a1d8601dae8c7aca3dd1f6dac2a83cf3480e5341
+    image: ghcr.io/perfsonar/unibuild/u18:debian-tarball@sha256:fb6fbab5f7cc79b4315c3130e19fc6a804ce5b3d0a695c0d72856c890e4e4d70
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   u20_amd64:
