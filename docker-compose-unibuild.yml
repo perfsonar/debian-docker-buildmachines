@@ -68,22 +68,22 @@ services:
     volumes: *default-volumes
   u20_amd64:
     platform: "linux/amd64"
-    image: ghcr.io/perfsonar/unibuild/u20:latest@sha256:2bfa00dc13383af0e53464a87836f27fd0d052bcf1e358fa753d7a930c893c3c
+    image: ghcr.io/perfsonar/unibuild/u20:latest@sha256:a8f0a4de4e5e5aa289a07cd27a8546e9972da665ae044dc7459ea77b43cbad4d
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   u20_arm64:
     platform: "linux/arm64"
-    image: ghcr.io/perfsonar/unibuild/u20:latest@sha256:70111e9aa71b67d3c9ca42ae3ee38e096a843792e197f2d472b2e02af91235df
+    image: ghcr.io/perfsonar/unibuild/u20:latest@sha256:37db3f97f9f42abcd6b93267c059044f2b9aa38c5b7e6d9af100a199d0bcc361
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   u20_armv7:
     platform: "linux/arm/v7"
-    image: ghcr.io/perfsonar/unibuild/u20:latest@sha256:10bf568356c0fcb2e54f2d294dd61e470eb4c4ec020d3dd97b18b8e35c18e9c3
+    image: ghcr.io/perfsonar/unibuild/u20:latest@sha256:5d8d2430175b2e047022d88e06af66ebf867e4c623708b5638ceb79128465297
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   u20_ppc64le:
     platform: "linux/ppc64le"
-    image: ghcr.io/perfsonar/unibuild/u20:latest@sha256:48c7c043c247906a32aff6bc29c24c839c0fee12eb288871ba394ad05c4146ef
+    image: ghcr.io/perfsonar/unibuild/u20:latest@sha256:a73b1a63bd0d7a772fa81d1f3ad1c1d18c8bdbe692bbef735c3fabe87fa7639e
     command: bash -c "sleep infinity"
     volumes: *default-volumes
 
