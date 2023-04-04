@@ -24,7 +24,7 @@ for changes in `ls ${BUILD_RESULTS}/*.dsc`; do
     reprepro --waitforlock 12 -v includedsc ${RELEASE} $changes
 done
 for changes in `ls ${BUILD_RESULTS}/*_[^s][a-z0-9]*.changes`; do
-    reprepro --waitforlock 12 -v include ${RELEASE} $changes
+    reprepro --waitforlock 12 --ignore=wrongdistribution -v include ${RELEASE} $changes
 done
 
 # Also add standalone .deb packages resulting from multiarch builds
