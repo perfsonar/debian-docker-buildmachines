@@ -30,15 +30,12 @@ done
 
 echo
 echo "Push the repository to the public repo server, in a staging space, deleting extraneous files"
-rsync -av --delete $REPREPRO_BASE_DIR/ jenkins@ps-deb-repo.qalab.geant.net:/var/www/html/repo-from-d10/
 rsync -av --delete $REPREPRO_BASE_DIR/ jenkins@${REPO_SERVER}:/var/www/html/repo-from-d10/
 # Update the staging repo description page
-ssh jenkins@ps-deb-repo.qalab.geant.net "~/deb-repo-info.pl -repo /var/www/html/repo-from-d10 -html > /var/www/html/repo-from-d10/index.html"
 ssh jenkins@${REPO_SERVER} "~/deb-repo-info.pl -repo /var/www/html/repo-from-d10 -html > /var/www/html/repo-from-d10/index.html"
 echo
 echo "Copy new packages into the final public repository (snapshot and staging only) and update the description page"
 OUT=`ssh jenkins@${REPO_SERVER} "reprepro --waitforlock 12 -b /var/www/html/debian update perfsonar-5.0-snapshot perfsonar-5.0-staging" 2>&1`
-OUT=`ssh jenkins@ps-deb-repo.qalab.geant.net "reprepro --waitforlock 12 -b /var/www/html/debian update perfsonar-5.0-snapshot perfsonar-5.0-staging" 2>&1`
 if [ ! $? -eq 0 ]; then
     echo
     echo "$OUT"
@@ -48,14 +45,4 @@ fi
 echo
 echo "$OUT"
 ssh jenkins@${REPO_SERVER} "~/deb-repo-info.pl -repo /var/www/html/debian -html > /var/www/html/debian/index.html"
-ssh jenkins@ps-deb-repo.qalab.geant.net "~/deb-repo-info.pl -repo /var/www/html/debian -html > /var/www/html/debian/index.html"
-
-# GÉANT repoo testing instance, should be removed when moving into production
-#for server in test
-#for server in test uat
-#    do
-#    echo
-#    echo "Publish to the mirror of downloads.perfsonar.net public host (${server}-pspackages.geant.net)"
-#    ssh jenkins@ps-deb-repo.qalab.geant.net "rsync -av --delete /var/www/html/debian/ psrepo@${server}-pspackages.geant.net:/var/www/html/debian/"
-#done
 
