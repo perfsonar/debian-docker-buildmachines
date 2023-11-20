@@ -11,7 +11,7 @@ show_help() {
         - Needs at least 2 sudoers whitelisting to be able to run under Jenkins.
 
     Defaults values:
-        - Support OS dependants builds on D10 and U20 (only packages needed to be compiled specifically
+        - Support OS dependants builds on other OSes (only packages needed to be compiled specifically
           on these OS are going to be tailored built.
         - Solves build and installation dependencies from the perfsonar-minor-snapshot repository
         - Build on all 4 arches we support for Debian and Ubuntu: amd64, arm64, armhf and ppc64el
@@ -66,7 +66,8 @@ CONTAINER_UPDATE_SCRIPT=" export DEBIAN_FRONTEND=noninteractive && \
 
 # Variables and options
 # Main build OS (should be oldest supported)
-OS=u18
+OS=d10
+
 # Parsing options
 while getopts "ho:" OPT; do
     case $OPT in
@@ -78,13 +79,13 @@ while getopts "ho:" OPT; do
 done
 shift $((OPTIND-1))
 
-if [[ ! "$OS" =~ ^(d10|d11|u18|u20|u22)$ ]]; then
+if [[ ! "$OS" =~ ^(d10|d11|d12|u18|u20|u22)$ ]]; then
     echo "OS $OS not supported for build"
     exit 1
 fi
 # Other OS to check for building packages
 if [ -z "$OSes" ]; then
-    OSes="d10 d11 d12 u20 u22"
+    OSes="d11 d12 u20 u22"
 fi
 export OS OSes REPO COMPOSE_FILE DIR_TO_BE_BUILT
 
