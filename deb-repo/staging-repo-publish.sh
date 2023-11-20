@@ -5,6 +5,7 @@
 ## reprepro defaults
 export REPREPRO_BASE_DIR=/var/local/repo
 REPO_SERVER=perfsonar-repo.geant.org
+REPOS=""
 
 ## Get repositories content
 set +x
@@ -15,11 +16,12 @@ echo "Local repositories are in $REPREPRO_BASE_DIR here is their current content
 ls -la $REPREPRO_BASE_DIR
 ls -la $REPREPRO_BASE_DIR/dists
 
-for DIST in 5.0; do
+for DIST in 5.0 5.1; do
     for RELEASE in staging snapshot; do
         echo
         # Check the current content of the repository
         REPO="perfsonar-${DIST}-${RELEASE}"
+        REPOS="${REPOS} ${REPO}"
         echo "Listing content of the local repository ${REPO}"
         reprepro list ${REPO}
         echo -n "Total number of packages in ${REPO}: "
@@ -35,7 +37,7 @@ rsync -av --delete $REPREPRO_BASE_DIR/ jenkins@${REPO_SERVER}:/var/www/html/repo
 ssh jenkins@${REPO_SERVER} "~/deb-repo-info.pl -repo /var/www/html/repo-from-d10 -html > /var/www/html/repo-from-d10/index.html"
 echo
 echo "Copy new packages into the final public repository (snapshot and staging only) and update the description page"
-OUT=`ssh jenkins@${REPO_SERVER} "reprepro --waitforlock 12 -b /var/www/html/debian update perfsonar-5.0-snapshot perfsonar-5.0-staging" 2>&1`
+OUT=`ssh jenkins@${REPO_SERVER} "reprepro --waitforlock 12 -b /var/www/html/debian update ${REPOS}" 2>&1`
 if [ ! $? -eq 0 ]; then
     echo
     echo "$OUT"
