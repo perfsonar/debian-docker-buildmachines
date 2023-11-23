@@ -59,6 +59,8 @@ BUILD_DIR='multiarch_build'
 FULL_BUILD_DIR="${DIR_TO_BE_BUILT}/$BUILD_DIR"
 RESULTS_DIR='unibuild-repo'
 CONTAINER_UPDATE_SCRIPT=" export DEBIAN_FRONTEND=noninteractive && \
+    curl -s http://downloads.perfsonar.net/debian/perfsonar-release.gpg.key | apt-key add - && \
+    curl -s -o /etc/apt/sources.list.d/perfsonar-release.list http://downloads.perfsonar.net/debian/perfsonar-release.list && \
     curl -s http://downloads.perfsonar.net/debian/$REPO.gpg.key | apt-key add - && \
     curl -s -o /etc/apt/sources.list.d/$REPO.list http://downloads.perfsonar.net/debian/$REPO.list && \
     apt-get update && \
@@ -194,9 +196,10 @@ for ARCH in ${ARCHES[@]}; do
 done
 if [ -n "$CONTAINERS" ]; then
     docker compose up -d $CONTAINERS || fail "Cannot start containers, please look at your Docker daemon."
-    echo -e "\n\033[1mAdding the perfSONAR repository to all containers (background task)…\033[0m\n"
+    echo -e "\n\033[1mAdding the perfSONAR repository to all foreign arch containers (background task)…\033[0m\n"
     for CONTAINER in ${CONTAINERS[@]}; do
         # Running in the background, while we'll make the master builds
+        echo "${CONTAINER}: Using ${REPO} to solve dependencies."
         docker compose exec -dT ${CONTAINER} bash -c "$CONTAINER_UPDATE_SCRIPT" || fail "Cannot exec the update script in ${CONTAINER}."
     done
 fi
@@ -254,6 +257,8 @@ for po in $pos; do
     # Remove leftovers to not confuse the next build
     sudo rm -f ${RESULTS_DIR}/unibuild/* || fail "Cannot empty ${RESULTS_DIR}/unibuild/ dir, check your sudo rules."
 done
+
+# TODO: Make Unibuild use the local repository to solve circular dependencies
 
 # Special cases to skip installing opensearch in a Unibuild container as it currently fails as missing systemd
 if [[ "${PROJECT}" =~ ^(archive|bundles|toolkit)$ ]]; then
