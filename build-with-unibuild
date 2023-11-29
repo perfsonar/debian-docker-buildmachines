@@ -19,7 +19,7 @@ show_help() {
         - Build the current directory
 
     Arguments understood:
-        -o OS to build on (defaults to u18, the oldes OS we support), needs to be in lower case
+        -o OS to build on (defaults to d10, the oldes OS we support), needs to be in lower case
            short form like d11 or u22
 
     Environment variables that can be set:
@@ -216,7 +216,7 @@ echo -e "\n\033[1mFirst loop on all additonal OSes\033[0m (${OSes[@]}) \033[1mth
 # plus a diff between the unibuild-order on the main OS and the OSes, excluding the already listed packages
 # And we add a trailing @ suffix with the OS on which to build
 # TODO: How to make sure they are built in the correct order in case of dependencies?
-find . -name Makefile -exec grep -q "(OS_PACKAGING),deb" {} \; -ls | sed 's|.*\./\(.*\)/Makefile|\1|' > os-specific-packages
+find . -name Makefile -exec grep -q "(OS_PACKAGING),deb" {} \; -ls | sed 's|.*\./\(.*\)/Makefile|^\1$|' > os-specific-packages
 pos=$(docker compose run --rm -T ${OS}_${MY_ARCH} bash -c "\
                 unibuild order > uorder-mine; \
                 opp=\$(grep -f os-specific-packages uorder-mine | xargs); \
@@ -225,10 +225,10 @@ pos=$(docker compose run --rm -T ${OS}_${MY_ARCH} bash -c "\
                     [ \"\${otherOS:0:1}\" == \"u\" ] && myDISTRO=Ubuntu; \
                     unibuild --define DISTRO=\$myDISTRO --define MAJOR=\${otherOS:1:2} order > uorder-other; \
                     for p in \${opp}; do \
-                        grep \$p uorder-other | sed \"s/\(.*\)/\1@\$otherOS/\"; \
+                        grep ^\$p$ uorder-other | sed \"s/\(.*\)/\1@\$otherOS/\"; \
                     done; \
                     diff uorder-mine uorder-other | grep -v -f os-specific-packages | awk -v os=\"\$otherOS\" '/^> / {printf \"%s@%s\n\",\$2,os;}'; \
-                    diff uorder-mine uorder-other | grep -v -f os-specific-packages | awk '/^> / {print \$2}' >> os-specific-packages; \
+                    diff uorder-mine uorder-other | grep -v -f os-specific-packages | awk '/^> / {print \"^\$2$\"}' >> os-specific-packages; \
                 done; \
                 rm -f uorder-mine uorder-other os-specific-packages")
 if [ -z "$pos" ]; then
