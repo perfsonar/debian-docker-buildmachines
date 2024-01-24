@@ -28,122 +28,122 @@ services:
     volumes: *default-volumes
   d10_amd64:
     platform: "linux/amd64"
-    image: ghcr.io/perfsonar/unibuild/d10:latest@sha256:3e9e7ce51935017aee4563fcfef31a8553f83bb6ddac1facd91a5d3a992fa251
+    image: ghcr.io/perfsonar/unibuild/d10:latest@sha256:7f2a1f72f0edff06968b5868d36c741368d407062f651e6f7cb3650290eb9e7f
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   d10_arm64:
     platform: "linux/arm64"
-    image: ghcr.io/perfsonar/unibuild/d10:latest@sha256:e7efd6846b73f949132675deb97480d0fff7dd0027b49dcff44a9701236090ac
+    image: ghcr.io/perfsonar/unibuild/d10:latest@sha256:d90ff6846b590d3aefda73f6ae2c34223da57ee9874455e2d9b5e8bf2355a8c2
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   d10_armv7:
     platform: "linux/arm/v7"
-    image: ghcr.io/perfsonar/unibuild/d10:latest@sha256:79e50ab2818c111c1db09cd3b32dc58d9c252076f7bc8f22380d480a784a7dcb
+    image: ghcr.io/perfsonar/unibuild/d10:latest@sha256:0a29ed8ac8d03f091712e52994f75e8aab53128017ca9f7c7f8afc852e69a0a5
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   d10_ppc64le:
     platform: "linux/ppc64le"
-    image: ghcr.io/perfsonar/unibuild/d10:latest@sha256:b73811878c75cfeec8f42639f9d84b54e3d633fea3fd38f236742977a084c861
+    image: ghcr.io/perfsonar/unibuild/d10:latest@sha256:848f8b07e06da65b00ce1535decc42715a1eef8fb934b35241053f1bb60c2772
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   d11_amd64:
     platform: "linux/amd64"
-    image: ghcr.io/perfsonar/unibuild/d11:latest@sha256:2f61b528d4a07898548d8156e862af43ca1ec5630972ec6a0cd8cc7271cc1e2d
+    image: ghcr.io/perfsonar/unibuild/d11:latest@sha256:294a6f61c74c8b06b882727a5d4e7766800b30224bcfff7894b61c8c12263db9
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   d11_arm64:
     platform: "linux/arm64"
-    image: ghcr.io/perfsonar/unibuild/d11:latest@sha256:7b2fcc86008c8c1d2b89703872f2756bcd2f651726256f2777afb88418689f3a
+    image: ghcr.io/perfsonar/unibuild/d11:latest@sha256:09db14decbcb10b34b0d972125ac5d4b4b9b03c8c12c2e8a9e39e1c46f87e19c
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   d11_armv7:
     platform: "linux/arm/v7"
-    image: ghcr.io/perfsonar/unibuild/d11:latest@sha256:d8cbb03c5bd8f88a01abd032725fa3c25e5593ddd7d1664e3f63e44021e5f0d7
+    image: ghcr.io/perfsonar/unibuild/d11:latest@sha256:8c537f8264516c4a186279bbe4749770ab8b6bf30b22353be30b7b34ca8144b0
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   d11_ppc64le:
     platform: "linux/ppc64le"
-    image: ghcr.io/perfsonar/unibuild/d11:latest@sha256:c712efe4b949cc1f5952a54231cb9ed3bbced94daf82cac6ea49a10b8021cfb0
+    image: ghcr.io/perfsonar/unibuild/d11:latest@sha256:356e1b6c01ddd35bc3755436b2f02a1fd2bb6db69322b3d97e7f0578adf0f9f4
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   d12_amd64:
     platform: "linux/amd64"
-    image: ghcr.io/perfsonar/unibuild/d12:latest@sha256:f38a5a8ca7e824bd264fbbf54176577f8faada95ea7298849aef6a94617c6f1e
+    image: ghcr.io/perfsonar/unibuild/d12:latest@sha256:c997a850c680618e1144f768b6c63554674f32661497caf59453373ab5e5380e
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   d12_arm64:
     platform: "linux/arm64"
-    image: ghcr.io/perfsonar/unibuild/d12:latest@sha256:b65f11b7f38ec6e7a08aada15a5d90c021d1ce892e335b8331b30122ac81866d
+    image: ghcr.io/perfsonar/unibuild/d12:latest@sha256:ec5ec81134b3e6c2fd7c05e41ce0de7658cff72b3469e5730cf08b9438b6f88f
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   d12_armv7:
     platform: "linux/arm/v7"
-    image: ghcr.io/perfsonar/unibuild/d12:latest@sha256:da85d819debccf952c5a44098fa44c9e99e4045c93458549c53ebc901590e085
+    image: ghcr.io/perfsonar/unibuild/d12:latest@sha256:398663da0155394e53facb08cc180fe3e887977067fee41b441d849c8a2dfa16
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   d12_ppc64le:
     platform: "linux/ppc64le"
-    image: ghcr.io/perfsonar/unibuild/d12:latest@sha256:4019bed5253f88764b1a20f26284e4d1fa05986a6ec8c392cd6b35702fbd0bac
+    image: ghcr.io/perfsonar/unibuild/d12:latest@sha256:2e9b0ef332762cebfb483118a3f63d3a69937221775a6d431aa59897f68c810d
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   u18_amd64:
     platform: "linux/amd64"
-    image: ghcr.io/perfsonar/unibuild/u18:latest@sha256:d43702fff624b9205b5659c465b93b04260cb111f44483580b1ca398c9d06256
+    image: ghcr.io/perfsonar/unibuild/u18:latest@sha256:6d1a63ad0f28977628a5dcd2a3e0863def52653af8e28af717e7354157ad0b43
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   u18_arm64:
     platform: "linux/arm64"
-    image: ghcr.io/perfsonar/unibuild/u18:latest@sha256:17f07bc28a0b21df4bbecdc0d25428bbdc741e94ebb2546a6dd92840e7bf7182
+    image: ghcr.io/perfsonar/unibuild/u18:latest@sha256:18d3e3a4d67511e9d62a07df09bd978695dc3e489bffdc0d4f3e8d954091c1f9
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   u18_armv7:
     platform: "linux/arm/v7"
-    image: ghcr.io/perfsonar/unibuild/u18:latest@sha256:19ec8f27e6378f2aa4888b849a4652ce5d9e81dbbf460f9f793f106bcbd7d0c4
+    image: ghcr.io/perfsonar/unibuild/u18:latest@sha256:d32be1ca55a19edb625eec65c76b86d0f2d77f4022364e38aca141ecee4d9b97
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   u18_ppc64le:
     platform: "linux/ppc64le"
-    image: ghcr.io/perfsonar/unibuild/u18:latest@sha256:bb3a0200e2c5d90e3b90fbffd0190740563c12f93029e291e92e0c432074c0fb
+    image: ghcr.io/perfsonar/unibuild/u18:latest@sha256:bd6e7d1d9d9e78eefccde5d0f0159c67d87189b5fe4c2bc8f03df79e591d846e
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   u20_amd64:
     platform: "linux/amd64"
-    image: ghcr.io/perfsonar/unibuild/u20:latest@sha256:be0b010ab4103f6cf661e132b278add6af4f6673e5c680e12e48d6bb72bb8180
+    image: ghcr.io/perfsonar/unibuild/u20:latest@sha256:673668b6e80b29298dc1fbf8894f6807069706f524dc86375f94a2b6979281ad
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   u20_arm64:
     platform: "linux/arm64"
-    image: ghcr.io/perfsonar/unibuild/u20:latest@sha256:7748a343857534f85def9ffeeaa37450a96807cae0efd0868f18f8649a8e78d5
+    image: ghcr.io/perfsonar/unibuild/u20:latest@sha256:b4415fe6ed798fbf3e4151a12252f87dbf9dd943840c6c5990929a694cceb75f
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   u20_armv7:
     platform: "linux/arm/v7"
-    image: ghcr.io/perfsonar/unibuild/u20:latest@sha256:cf3d079d3a6473c769f2eb19dff37ef7c3210ee438da3bc5ccd13398a7b679b3
+    image: ghcr.io/perfsonar/unibuild/u20:latest@sha256:bcf1e9c6d7f0c030c65ec92d158c208ac808fd24b10687ffecbb27572acb0636
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   u20_ppc64le:
     platform: "linux/ppc64le"
-    image: ghcr.io/perfsonar/unibuild/u20:latest@sha256:c998666ac3e9cc1a4d09e6bbb083d25d5aa094ba5cf74916cde92a8afd14542c
+    image: ghcr.io/perfsonar/unibuild/u20:latest@sha256:3a66c3bce2bfb62ca4a9980e0df620d80a047295426f5d7b8730789a71c87b82
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   u22_amd64:
     platform: "linux/amd64"
-    image: ghcr.io/perfsonar/unibuild/u22:latest@sha256:e17b837d27c89911e04f624c82cb0cdab70a1dae02f0a193eebb8df8ec25285c
+    image: ghcr.io/perfsonar/unibuild/u22:latest@sha256:fb8929d1964cb865b38ec373c0ecd0425fa45fb448fb7fdf585c66d30e0df96b
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   u22_arm64:
     platform: "linux/arm64"
-    image: ghcr.io/perfsonar/unibuild/u22:latest@sha256:54d8cb89177d6ae5edeface9a2c054e7f4b8795acb0dfa4e80cc299c2f968149
+    image: ghcr.io/perfsonar/unibuild/u22:latest@sha256:4272f7484c9ced44f64ac1f6ebf898a33be07c5aaa33f8432f5c27ac027135ea
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   u22_armv7:
     platform: "linux/arm/v7"
-    image: ghcr.io/perfsonar/unibuild/u22:latest@sha256:eda8f5135d23b503b9602962148cf7e56614f92257336e71749236d7c3827988
+    image: ghcr.io/perfsonar/unibuild/u22:latest@sha256:16eff9c56266af70becc11576ce8d116d3577d89d80fec43c16edc19b5af31d8
     command: bash -c "sleep infinity"
     volumes: *default-volumes
   u22_ppc64le:
     platform: "linux/ppc64le"
-    image: ghcr.io/perfsonar/unibuild/u22:latest@sha256:4e0ad50812a7a9f6f8db10ecbe4000d0b9b0438c03160265b205a4abcea9ecc5
+    image: ghcr.io/perfsonar/unibuild/u22:latest@sha256:f5a90ca9a0fde4eed2a0fb9bac1ff237ec74c89ed68340e9c274498288b1a0cc
     command: bash -c "sleep infinity"
     volumes: *default-volumes
 
