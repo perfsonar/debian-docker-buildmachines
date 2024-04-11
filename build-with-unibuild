@@ -59,10 +59,13 @@ BUILD_DIR='multiarch_build'
 FULL_BUILD_DIR="${DIR_TO_BE_BUILT}/$BUILD_DIR"
 RESULTS_DIR='unibuild-repo'
 CONTAINER_UPDATE_SCRIPT=" export DEBIAN_FRONTEND=noninteractive && \
-    curl -s http://downloads.perfsonar.net/debian/perfsonar-release.gpg.key | apt-key add - && \
+    curl -s -o /etc/apt/trusted.gpg.d/perfsonar-release.gpg.asc http://downloads.perfsonar.net/debian/perfsonar-release.gpg.key && \
     curl -s -o /etc/apt/sources.list.d/perfsonar-release.list http://downloads.perfsonar.net/debian/perfsonar-release.list && \
-    curl -s http://downloads.perfsonar.net/debian/$REPO.gpg.key | apt-key add - && \
+    curl -s -o /etc/apt/trusted.gpg.d/$REPO.gpg.asc http://downloads.perfsonar.net/debian/$REPO.gpg.key && \
     curl -s -o /etc/apt/sources.list.d/$REPO.list http://downloads.perfsonar.net/debian/$REPO.list && \
+    mkdir -p \$(pwd)/unibuild-repo/ && \
+    touch \$(pwd)/unibuild-repo/Packages && \
+    echo deb [trusted=yes] file:\$(pwd)/unibuild-repo ./ > /etc/apt/sources.list.d/localy-built-packages.list && \
     apt-get update && \
     echo && echo "
 
