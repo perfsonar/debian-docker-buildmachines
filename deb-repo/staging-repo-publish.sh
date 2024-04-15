@@ -7,7 +7,8 @@ export REPREPRO_BASE_DIR=/var/local/repo
 REPO_SERVER=perfsonar-repo.geant.org
 REPOS=""
 
-## Get repositories content
+## Get repositories content on the build machine
+echo -e "\n\n\n*** We're on the build machine ***\n"
 set +x
 uptime
 uname -a
@@ -31,11 +32,13 @@ for DIST in 5.0 5.1; do
 done
 
 echo
-echo "Push the repository to the public repo server, in a staging space, deleting extraneous files"
+echo "Push the build repository to the public repo server, in a staging space, deleting extraneous files."
 rsync -av --delete $REPREPRO_BASE_DIR/ jenkins@${REPO_SERVER}:/var/www/html/repo-from-d10/
 # Update the staging repo description page
 ssh jenkins@${REPO_SERVER} "~/deb-repo-info.pl -repo /var/www/html/repo-from-d10 -html > /var/www/html/repo-from-d10/index.html"
-echo
+
+# Publish on repository server
+echo -e "\n\n\n*** Now on the repository server ***\n"
 echo "Copy new packages into the final public repository (snapshot and staging only) and update the description page"
 OUT=`ssh jenkins@${REPO_SERVER} "reprepro --waitforlock 12 -b /var/www/html/debian update ${REPOS}" 2>&1`
 if [ ! $? -eq 0 ]; then

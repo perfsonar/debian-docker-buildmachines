@@ -18,7 +18,7 @@ RELEASE=$2
 # Defaults
 export REPREPRO_BASE_DIR=/var/local/repo
 
-# Add resulting packages to repository
+echo -e "\n\n\n*** Adding resulting packages to local repository on the build machine ***\n"
 # If multiple .changes files exist for the same package, only the most recent one will be kept
 for changes in `ls ${BUILD_RESULTS}/*.dsc`; do
     reprepro --waitforlock 12 -v includedsc ${RELEASE} $changes
@@ -27,7 +27,7 @@ for changes in `ls ${BUILD_RESULTS}/*_[^s][a-z0-9]*.changes`; do
     reprepro --waitforlock 12 --ignore=wrongdistribution -v include ${RELEASE} $changes
 done
 
-# Also add standalone .deb packages resulting from multiarch builds
+echo -e "\n* Also add standalone .deb packages resulting from multiarch builds *\n"
 # We list all OS we support, except the main building one, see OS variable in the build-with-unibuild script
 for os in d10 d11 d12 u20 u22; do
     for p in `ls *-${os}_* 2>/dev/null`; do
@@ -35,7 +35,7 @@ for os in d10 d11 d12 u20 u22; do
     done
 done
 
-# Run Lintian on built packages
+echo -e "\n*** Run Lintian on built packages ***\n"
 for changes in `ls ${BUILD_RESULTS}/*.changes`; do
     lintian --suppress-tags bad-distribution-in-changes-file $changes
 done
