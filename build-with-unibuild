@@ -161,6 +161,7 @@ build_foreign() {
                 # TODO: can we run all ARCHES builds in parallel?
                 docker compose exec -T ${OS}_${LARCH} bash -c "\
                     cd $BUILD_DIR && \
+                    unibuild order | grep $p && \
                     mk-build-deps --install --tool 'apt-get --yes --no-install-recommends -o Debug::pkgProblemResolver=yes' --remove && \
                     dpkg-buildpackage -us -uc -i -sa -b && \
                     MYARCH=\$(dpkg --print-architecture) && \
