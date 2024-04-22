@@ -30,7 +30,7 @@ done
 echo -e "\n* Also add standalone .deb packages resulting from multiarch builds *\n"
 # We list all OS we support, except the main building one, see OS variable in the build-with-unibuild script
 for os in d10 d11 d12 u20 u22; do
-    for p in `ls *-${os}_* 2>/dev/null`; do
+    for p in `ls ${BUILD_RESULTS}/*-${os}_* 2>/dev/null`; do
         reprepro --waitforlock 12 -v includedeb ${RELEASE} $p
     done
 done
