@@ -10,6 +10,7 @@ COMPOSE=docker-compose-unibuild.yml
 
 for OSimage in ${OSimages[@]}; do
     export OSimage
+    echo $OSimage
     for LINE in `(docker buildx imagetools inspect "${REGISTRY}${OSimage}"; echo) | perl -nle '$sha=$1 if /$ENV{OSimage}\@sha256:([a-z0-9]*)/; print "$1:$sha" if /(linux\/(amd64|arm64|arm\/v7|ppc64le))/;'`; do
         arch=${LINE%:*}
         arch="${arch//\//\\/}"
