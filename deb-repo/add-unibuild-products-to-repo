@@ -20,8 +20,8 @@ export REPREPRO_BASE_DIR=/var/local/repo
 
 echo -e "\n\n\n*** Adding resulting packages to local repository on the build machine ***\n"
 # If multiple .changes files exist for the same package, only the most recent one will be kept
-for changes in `ls ${BUILD_RESULTS}/*.dsc`; do
-    reprepro --waitforlock 12 -v includedsc ${RELEASE} $changes
+for dsc in `ls ${BUILD_RESULTS}/*.dsc`; do
+    reprepro --waitforlock 12 -v includedsc ${RELEASE} $dsc
 done
 for changes in `ls ${BUILD_RESULTS}/*_[^s][a-z0-9]*.changes`; do
     reprepro --waitforlock 12 --ignore=wrongdistribution -v include ${RELEASE} $changes
