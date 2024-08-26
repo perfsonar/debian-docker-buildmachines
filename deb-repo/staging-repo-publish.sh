@@ -17,7 +17,7 @@ echo "Local repositories are in $REPREPRO_BASE_DIR here is their current content
 ls -la $REPREPRO_BASE_DIR
 ls -la $REPREPRO_BASE_DIR/dists
 
-for DIST in 5.0 5.1; do
+for DIST in 5.0 5.1 5.2; do
     for RELEASE in staging snapshot; do
         echo
         # Check the current content of the repository
