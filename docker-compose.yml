@@ -1,5 +1,3 @@
-version: '3.9'
-
 ###
 # Some repeated defaults:
 # tmpfs and /sys/fs/cgroup volumes are needed for systemd to work properly

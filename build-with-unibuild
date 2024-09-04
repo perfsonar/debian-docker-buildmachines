@@ -145,7 +145,7 @@ build_foreign() {
     dsc=`ls -1t ${P_DIR}/${p}_*.dsc | head -1`
     if head -1 $dsc | grep -q '(native)' ; then
         echo "This is a Debian native package, there is no orig tarball."
-        cat ${dsc%.dsc}.debian.tar.xz | tar -Jx -C $BUILD_DIR --strip-components 1 -f -
+        cat ${dsc%.dsc}.tar.xz | tar -Jx -C $BUILD_DIR --strip-components 1 -f -
     else
         cat ${dsc%-*}.orig.* | tar -zx -C $BUILD_DIR --strip-components 1 -f -
         cat ${dsc%.dsc}.debian.tar.xz | tar -Jx -C $BUILD_DIR -f -
@@ -236,32 +236,10 @@ pos=$(docker compose run --rm -T ${OS}_${MY_ARCH} bash -c "\
                 done; \
                 rm -f uorder-mine uorder-other os-specific-packages")
 if [ -z "$pos" ]; then
-    echo -e "No specially crafted package needed."
+    echo -e "\nNo specially crafted package needed."
 else
-    echo -e "We're going to build the following packages first:\n$pos"
+    echo -e "\nWe're going to build the following packages at the very end:\n$pos"
 fi
-for po in $pos; do
-    # Package name and OS on which to build
-    package=${po%@*}
-    otherOS=${po#*@}
-    # Build each package on main architecture first
-    echo -e "\n===== Building package \033[1m${package}\033[0m in \033[1m${otherOS}_${MY_ARCH}\033[0m container ====="
-    # This is not ideal to run the CONTAINER_UPDATE_SCRIPT each time we build a package,
-    # TODO: but that's the only way to collect the return code (run vs exec).  :-/
-    docker compose run --rm -T ${otherOS}_${MY_ARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
-        unibuild $UNIBUILD_OPTS build --start ${package} --stop ${package} \
-        "
-    if [ $? -ne 0 ]; then
-        fail "Something went wrong with Unibuild on ${otherOS}_${MY_ARCH} for package ${package}, I'll stop here."
-    fi
-    # The resulting package name is not the package dirname
-    result=`head -1 ${RESULTS_DIR}/unibuild/debian-package-order`
-    # We now need to build it on foreign architectures
-    build_foreign ${otherOS} ${result} ${package} || fail "Something went wrong building foreign arch package for ${result} from ${package}"
-    # Remove leftovers to not confuse the next build
-    sudo rm -f ${RESULTS_DIR}/unibuild/* || fail "Cannot empty ${RESULTS_DIR}/unibuild/ dir, check your sudo rules."
-done
-
 # TODO: Make Unibuild use the local repository to solve circular dependencies
 
 # Special cases to skip installing opensearch in a Unibuild container as it currently fails as missing systemd
@@ -283,6 +261,29 @@ echo -e "\n\n*** Unibuild: done! ***\n"
 # to see which one we need to build on foreign architectures
 for p in `cat ${RESULTS_DIR}/unibuild/debian-package-order`; do
     build_foreign ${OS} ${p} || fail "Something went wrong building foreign arch package for ${p}"
+done
+
+# Finally loop on all additional OS we need to build specialised packages
+for po in $pos; do
+    # Package name and OS on which to build
+    package=${po%@*}
+    otherOS=${po#*@}
+    # Build each package on main architecture first
+    echo -e "\n===== Building package \033[1m${package}\033[0m in \033[1m${otherOS}_${MY_ARCH}\033[0m container ====="
+    # This is not ideal to run the CONTAINER_UPDATE_SCRIPT each time we build a package,
+    # TODO: but that's the only way to collect the return code (run vs exec).  :-/
+    docker compose run --rm -T ${otherOS}_${MY_ARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
+        unibuild $UNIBUILD_OPTS build --start ${package} --stop ${package} \
+        "
+    if [ $? -ne 0 ]; then
+        fail "Something went wrong with Unibuild on ${otherOS}_${MY_ARCH} for package ${package}, I'll stop here."
+    fi
+    # The resulting package name is not the package dirname
+    result=`awk '/Source:/ { print $2 }' ${package}/unibuild-work/products/*.dsc`
+    # We now need to build it on foreign architectures
+    build_foreign ${otherOS} ${result} ${package} || fail "Something went wrong building foreign arch package for ${result} from ${package}"
+    # Remove leftovers to not confuse the next build
+    sudo rm -f ${RESULTS_DIR}/unibuild/* || fail "Cannot empty ${RESULTS_DIR}/unibuild/ dir, check your sudo rules."
 done
 
 echo -e "\n*** All done! ***\n"

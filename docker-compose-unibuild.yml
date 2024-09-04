@@ -1,5 +1,4 @@
 # Docker compose file dedicated to Unibuild builds
-version: '3.9'
 
 ###
 # Some repeated defaults:
