@@ -8,14 +8,13 @@
 # Or 'dual_build' to build only for AMD64 and ARM64
 # See docker-bake.hcl for details and other bake targets
 
-# We use debian:buster as the build OS
-# Debian Buster 10.11 is the latest to have the ppc64le architecture
-declare -a OSimages=("debian:10.11")
+# We use ubuntu:focal as the main build OS
+declare -a OSimages=("ubuntu:focal")
 #declare -a OSimages=("debian:buster" "ubuntu:bionic" "ubuntu:focal")
 
 # Make sure we have a repository
 if [ -z "$REPO" ]; then
-    REPO="perfsonar-5.0-snapshot"
+    REPO="perfsonar-minor-snapshot"
 fi
 
 # Check what build we should do

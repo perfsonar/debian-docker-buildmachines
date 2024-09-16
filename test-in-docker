@@ -30,7 +30,7 @@ declare -a ARCHES=("linux/amd64" "linux/arm64")
 # See other valid values in build-in-docker
 # The ARCHES used need to have a valid image already built, this script is not building any, only the build-in-docker script is building the images
 # TODO: Move the image building part into dedicated script
-declare -a OSimages=("debian:stretch" "debian:buster" "ubuntu:bionic" "ubuntu:focal")
+declare -a OSimages=("debian:bullseye" "debian:bookworm" "ubuntu:focal" "ubuntu:jammy" "ubuntu:noble")
 build_docker_images=true
 REPO="perfsonar-minor-snapshot"
 
