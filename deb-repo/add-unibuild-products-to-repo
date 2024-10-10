@@ -34,6 +34,8 @@ for os in d10 d11 d12 u20 u22; do
         reprepro --waitforlock 12 -v includedeb ${RELEASE} $p
     done
 done
+# And external packages just downloaded (must be last step)
+reprepro --waitforlock 12 -v includedeb ${RELEASE} ${BUILD_RESULTS}/*.deb
 
 echo -e "\n*** Run Lintian on built packages ***\n"
 for changes in `ls ${BUILD_RESULTS}/*.changes`; do
