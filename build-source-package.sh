@@ -91,6 +91,8 @@ if [ -z $DEBIAN_TAG ]; then
         # Native package don't have a release number
         new_version=${current_version}~${timestamp}
     else
+        latest_tag=`git describe --tags master`
+        prev_version=`git diff ${latest_tag} -- python-pyjq/unibuild-packaging/deb/changelog | grep ' pyjq ' | sed -n 's/.* (\(.*\)) .*/\1/p'`
         new_version=${current_version%-*}~${timestamp}-${current_version##*-}
     fi
     dch -b --distribution=UNRELEASED --newversion=${new_version} -- 'SNAPSHOT autobuild for '${current_version}' via Jenkins'

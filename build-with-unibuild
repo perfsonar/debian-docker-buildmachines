@@ -238,7 +238,9 @@ pos=$(docker compose run --rm -T ${OS}_${MY_ARCH} bash -c "\
 if [ -z "$pos" ]; then
     echo -e "\nNo specially crafted package needed."
 else
-    echo -e "\nWe're going to build the following packages at the very end:\n$pos"
+    echo -e "\nThe full list of specially crafted packages -"$(echo $pos | wc -w)" - is:\n$pos"
+    pos=$(echo "$pos" | grep -vE "iperf3@(u22|u24|d12)")
+    echo -e "\nBut we're going to build only the following packages -"$(echo $pos | wc -w)" - at the very end:\n$pos"
 fi
 # TODO: Make Unibuild use the local repository to solve circular dependencies
 
