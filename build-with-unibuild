@@ -19,7 +19,7 @@ show_help() {
         - Build the current directory
 
     Arguments understood:
-        -o OS to build on (defaults to d10, the oldes OS we support), needs to be in lower case
+        -o OS to build on (defaults to u20, the oldes OS we support), needs to be in lower case
            short form like d11 or u22
 
     Environment variables that can be set:
