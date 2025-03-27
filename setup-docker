@@ -64,29 +64,29 @@ echo
 docker images
 echo
 
-### Build the new images on the different platforms
-export OSimage REPO
-# Loop on all OS we want to have build machines
-for OSimage in ${OSimages[@]}; do
-    echo -e "\033[1mNow let's build Docker images for \033[1;32m$OSimage \033[1;37m- target: \033[1;32m$build_type\033[0m"
-    # Prepare and push the images
-    docker buildx bake $build_type
-    # Once images are pushed, we need to modify the docker-compose.yml file with the new SHA256
-    for LINE in `(docker buildx imagetools inspect "ntw0n/psbuild.$REPO.$OSimage"; echo) | perl -nle '$sha=$1 if /$ENV{OSimage}\@sha256:([a-z0-9]*)/; print "$1:$sha" if /(linux\/(amd64|arm64|arm\/v7|ppc64le))/;'`; do
-        arch=${LINE%:*}
-        arch="${arch//\//\\/}"
-        sha=${LINE#*:}
-        export arch sha
-        perl -nli -e '$sha = $ENV{sha} if /$ENV{arch}/; if (/\/psbuild\..*\@sha256.*/ && $sha ne "") {print "    image: docker.io/ntw0n/psbuild.\$REPO.\$OSimage\@sha256:$sha"; $sha = "";} else {print;}' docker-compose.yml
-    done
-    echo
-done
-git commit -m "Updating Docker multiarch image sha256" docker-compose.yml
-
-# Display result
-docker images
-echo
-echo -e "\033[1mAll images built and pushed!\033[0m"
-echo "If new images have been generated and pushed to Docker Hub, you'll also need to push the docker-compose.yml file change to the GitHub repo."
-git status
-
+#### Build the new images on the different platforms
+#export OSimage REPO
+## Loop on all OS we want to have build machines
+#for OSimage in ${OSimages[@]}; do
+#    echo -e "\033[1mNow let's build Docker images for \033[1;32m$OSimage \033[1;37m- target: \033[1;32m$build_type\033[0m"
+#    # Prepare and push the images
+#    docker buildx bake $build_type
+#    # Once images are pushed, we need to modify the docker-compose.yml file with the new SHA256
+#    for LINE in `(docker buildx imagetools inspect "ntw0n/psbuild.$REPO.$OSimage"; echo) | perl -nle '$sha=$1 if /$ENV{OSimage}\@sha256:([a-z0-9]*)/; print "$1:$sha" if /(linux\/(amd64|arm64|arm\/v7|ppc64le))/;'`; do
+#        arch=${LINE%:*}
+#        arch="${arch//\//\\/}"
+#        sha=${LINE#*:}
+#        export arch sha
+#        perl -nli -e '$sha = $ENV{sha} if /$ENV{arch}/; if (/\/psbuild\..*\@sha256.*/ && $sha ne "") {print "    image: docker.io/ntw0n/psbuild.\$REPO.\$OSimage\@sha256:$sha"; $sha = "";} else {print;}' docker-compose.yml
+#    done
+#    echo
+#done
+#git commit -m "Updating Docker multiarch image sha256" docker-compose.yml
+#
+## Display result
+#docker images
+#echo
+#echo -e "\033[1mAll images built and pushed!\033[0m"
+#echo "If new images have been generated and pushed to Docker Hub, you'll also need to push the docker-compose.yml file change to the GitHub repo."
+#git status
+#

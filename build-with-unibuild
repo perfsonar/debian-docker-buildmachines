@@ -253,6 +253,8 @@ fi
 # Add pS repo (see TODO in otherOS loop above) and make the master build on the main OS with unibuild
 echo -e "\n===== \033[1mStarting the main full ${PROJECT} Unibuild build in ${OS}_${MY_ARCH} container\033[0m =====\n"
 docker compose run --rm -T ${OS}_${MY_ARCH} bash -c "$CONTAINER_UPDATE_SCRIPT && \
+    echo 'Unibuild version installed:' && \
+    ls -la /usr/share/unibuild/unibuild-package/unibuild-package/ && \
     ${UNIBUILD_SEQ}"
 if [ $? -ne 0 ]; then
     fail "Something went wrong with Unibuild, I'll stop here."
