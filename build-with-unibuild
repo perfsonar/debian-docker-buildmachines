@@ -239,7 +239,7 @@ if [ -z "$pos" ]; then
     echo -e "\nNo specially crafted package needed."
 else
     echo -e "\nThe full list of specially crafted packages -"$(echo $pos | wc -w)" - is:\n$pos"
-    pos=$(echo "$pos" | grep -vE "iperf3@(u24|d11|d12)")
+    pos=$(echo "$pos" | grep -vE "iperf3@(u24|d11|d12)" | grep -vE "ethr@u24")
     echo -e "\nBut we're going to build only the following packages -"$(echo $pos | wc -w)"- at the very end:\n$pos"
 fi
 # TODO: Make Unibuild use the local repository to solve circular dependencies
