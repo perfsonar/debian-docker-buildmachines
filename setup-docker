@@ -35,9 +35,9 @@ echo
 
 ### Clear Docker caches
 echo -e "\033[1mLet's clear caches\033[0m"
-docker builder prune -af
-echo
 docker system prune -f
+echo
+docker builder prune -af
 echo
 docker volume prune -f
 echo
