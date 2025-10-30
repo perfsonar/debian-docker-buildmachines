@@ -220,32 +220,34 @@ fi
 # Currently (20230328) the packages that need to be built first are: ethr, jq, oniguruma and python-vine
 sudo rm -f ${RESULTS_DIR}/unibuild/* || fail "Cannot empty ${RESULTS_DIR}/unibuild/ dir, check your sudo rules."
 
-echo -e "\n\033[1mFirst loop on all additonal OSes\033[0m (${OSes[@]}) \033[1mthat need specially crafted packages.\033[0m"
-# We get the list from all Makefile using the OS_PACKAGING macro
-# plus a diff between the unibuild-order on the main OS and the OSes, excluding the already listed packages
-# And we add a trailing @ suffix with the OS on which to build
-# TODO: How to make sure they are built in the correct order in case of dependencies?
-find . -name Makefile -exec grep -q "(OS_PACKAGING),deb" {} \; -ls | sed 's|.*\./\(.*\)/Makefile|^\1$|' > os-specific-packages
-pos=$(docker compose run --rm -T ${OS}_${MY_ARCH} bash -c "\
-                unibuild order > uorder-mine; \
-                opp=\$(grep -f os-specific-packages uorder-mine | xargs); \
-                for otherOS in ${OSes}; do \
-                    [ \"\${otherOS:0:1}\" == \"d\" ] && myDISTRO=Debian; \
-                    [ \"\${otherOS:0:1}\" == \"u\" ] && myDISTRO=Ubuntu; \
-                    unibuild --define DISTRO=\$myDISTRO --define MAJOR=\${otherOS:1:2} order > uorder-other; \
-                    for p in \${opp}; do \
-                        grep ^\$p$ uorder-other | sed \"s/\(.*\)/\1@\$otherOS/\"; \
+if [ -n "$UNIBUILD_BUILD_OPTS" ]; then
+    echo -e "\n\033[1mFirst loop on all additonal OSes\033[0m (${OSes[@]}) \033[1mthat need specially crafted packages.\033[0m"
+    # We get the list from all Makefile using the OS_PACKAGING macro
+    # plus a diff between the unibuild-order on the main OS and the OSes, excluding the already listed packages
+    # And we add a trailing @ suffix with the OS on which to build
+    # TODO: How to make sure they are built in the correct order in case of dependencies?
+    find . -name Makefile -exec grep -q "(OS_PACKAGING),deb" {} \; -ls | sed 's|.*\./\(.*\)/Makefile|^\1$|' > os-specific-packages
+    pos=$(docker compose run --rm -T ${OS}_${MY_ARCH} bash -c "\
+                    unibuild order > uorder-mine; \
+                    opp=\$(grep -f os-specific-packages uorder-mine | xargs); \
+                    for otherOS in ${OSes}; do \
+                        [ \"\${otherOS:0:1}\" == \"d\" ] && myDISTRO=Debian; \
+                        [ \"\${otherOS:0:1}\" == \"u\" ] && myDISTRO=Ubuntu; \
+                        unibuild --define DISTRO=\$myDISTRO --define MAJOR=\${otherOS:1:2} order > uorder-other; \
+                        for p in \${opp}; do \
+                            grep ^\$p$ uorder-other | sed \"s/\(.*\)/\1@\$otherOS/\"; \
+                        done; \
+                        diff uorder-mine uorder-other | grep -v -f os-specific-packages | awk -v os=\"\$otherOS\" '/^> / {printf \"%s@%s\n\",\$2,os;}'; \
+                        diff uorder-mine uorder-other | grep -v -f os-specific-packages | awk '/^> / {print \"^\$2$\"}' >> os-specific-packages; \
                     done; \
-                    diff uorder-mine uorder-other | grep -v -f os-specific-packages | awk -v os=\"\$otherOS\" '/^> / {printf \"%s@%s\n\",\$2,os;}'; \
-                    diff uorder-mine uorder-other | grep -v -f os-specific-packages | awk '/^> / {print \"^\$2$\"}' >> os-specific-packages; \
-                done; \
-                rm -f uorder-mine uorder-other os-specific-packages")
-if [ -z "$pos" ]; then
-    echo -e "\nNo specially crafted package needed."
-else
-    echo -e "\nThe full list of specially crafted packages -"$(echo $pos | wc -w)" - is:\n$pos"
-    pos=$(echo "$pos" | grep -vE "iperf3@(u24|d11|d12)" | grep -vE "ethr@u24")
-    echo -e "\nBut we're going to build only the following packages -"$(echo $pos | wc -w)"- at the very end:\n$pos"
+                    rm -f uorder-mine uorder-other os-specific-packages")
+    if [ -z "$pos" ]; then
+        echo -e "\nNo specially crafted package needed."
+    else
+        echo -e "\nThe full list of specially crafted packages -"$(echo $pos | wc -w)" - is:\n$pos"
+        pos=$(echo "$pos" | grep -vE "iperf3@(u24|d11|d12)" | grep -vE "ethr@u24")
+        echo -e "\nBut we're going to build only the following packages -"$(echo $pos | wc -w)"- at the very end:\n$pos"
+    fi
 fi
 # TODO: Make Unibuild use the local repository to solve circular dependencies
 
