@@ -252,7 +252,7 @@ fi
 # TODO: Make Unibuild use the local repository to solve circular dependencies
 
 # Special cases to skip installing opensearch in a Unibuild container as it currently fails as missing systemd
-if [[ "${PROJECT}" =~ ^(archive|bundles|toolkit)$ ]]; then
+if [[ "${PROJECT}" =~ ^(archive|bundles|perfsonar-raw-data|toolkit)$ ]]; then
     UNIBUILD_SEQ="make clean && unibuild $UNIBUILD_OPTS make && mkdir /app/unibuild-repo && unibuild gather /app/unibuild-repo"
 else
     UNIBUILD_SEQ="unibuild $UNIBUILD_OPTS build $UNIBUILD_BUILD_OPTS"
