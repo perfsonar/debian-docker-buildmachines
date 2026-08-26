@@ -19,7 +19,7 @@ show_help() {
         - Build the current directory
 
     Arguments understood:
-        -o OS to build on (defaults to u20, the oldes OS we support), needs to be in lower case
+        -o OS to build on (defaults to u22, the oldes OS we support), needs to be in lower case
            short form like d11 or u22
 
     Environment variables that can be set:
@@ -76,7 +76,7 @@ CONTAINER_UPDATE_SCRIPT=" export DEBIAN_FRONTEND=noninteractive && \
 
 # Variables and options
 # Main build OS (should be oldest supported)
-OS=u20
+OS=u22
 
 # Parsing options
 while getopts "ho:" OPT; do
@@ -95,7 +95,7 @@ if [[ ! "$OS" =~ ^(d11|d12|u20|u22|u24)$ ]]; then
 fi
 # Other OS to check for building packages
 if [ -z "$OSes" ]; then
-    OSes="d11 d12 u22 u24"
+    OSes="d11 d12 u24"
 fi
 export OS OSes REPO COMPOSE_FILE DIR_TO_BE_BUILT
 
