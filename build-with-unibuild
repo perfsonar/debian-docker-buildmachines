@@ -95,7 +95,7 @@ if [[ ! "$OS" =~ ^(d11|d12|u20|u22|u24)$ ]]; then
 fi
 # Other OS to check for building packages
 if [ -z "$OSes" ]; then
-    OSes="d11 d12 u24"
+    OSes="d12 u24"
 fi
 export OS OSes REPO COMPOSE_FILE DIR_TO_BE_BUILT
 
