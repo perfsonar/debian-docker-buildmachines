@@ -9,7 +9,7 @@
 # See docker-bake.hcl for details and other bake targets
 
 # We use ubuntu:focal as the main build OS
-declare -a OSimages=("ubuntu:focal")
+declare -a OSimages=("debian:bookworm")
 #declare -a OSimages=("debian:buster" "ubuntu:bionic" "ubuntu:focal")
 
 # Make sure we have a repository
