@@ -76,7 +76,7 @@ CONTAINER_UPDATE_SCRIPT=" export DEBIAN_FRONTEND=noninteractive && \
 
 # Variables and options
 # Main build OS (should be oldest supported)
-OS=u22
+OS=d12
 
 # Parsing options
 while getopts "ho:" OPT; do
@@ -95,7 +95,7 @@ if [[ ! "$OS" =~ ^(d11|d12|u20|u22|u24)$ ]]; then
 fi
 # Other OS to check for building packages
 if [ -z "$OSes" ]; then
-    OSes="d12 u24"
+    OSes="d13 u24 u26"
 fi
 export OS OSes REPO COMPOSE_FILE DIR_TO_BE_BUILT
 
