@@ -72,6 +72,7 @@ CONTAINER_UPDATE_SCRIPT=" export DEBIAN_FRONTEND=noninteractive && \
     touch \$(pwd)/unibuild-repo/Packages && \
     echo deb [trusted=yes] file:\$(pwd)/unibuild-repo ./ > /etc/apt/sources.list.d/localy-built-packages.list && \
     apt-get update && \
+    git config --global --add safe.directory /app && \
     echo && echo "
 
 # Variables and options
@@ -255,7 +256,8 @@ fi
 if [[ "${PROJECT}" =~ ^(archive|bundles|perfsonar-raw-data|toolkit)$ ]]; then
     UNIBUILD_SEQ="make clean && unibuild $UNIBUILD_OPTS make && mkdir /app/unibuild-repo && unibuild gather /app/unibuild-repo"
 else
-    UNIBUILD_SEQ="unibuild $UNIBUILD_OPTS build $UNIBUILD_BUILD_OPTS"
+    # Double build command to see if it solves the patch failing to be applied.
+    UNIBUILD_SEQ="unibuild $UNIBUILD_OPTS build $UNIBUILD_BUILD_OPTS || unibuild $UNIBUILD_OPTS build $UNIBUILD_BUILD_OPTS"
 fi
 # Add pS repo (see TODO in otherOS loop above) and make the master build on the main OS with unibuild
 echo -e "\n===== \033[1mStarting the main full ${PROJECT} Unibuild build in ${OS}_${MY_ARCH} container\033[0m =====\n"
