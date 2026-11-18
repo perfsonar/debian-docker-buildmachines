@@ -90,13 +90,13 @@ while getopts "ho:" OPT; do
 done
 shift $((OPTIND-1))
 
-if [[ ! "$OS" =~ ^(d11|d12|u20|u22|u24)$ ]]; then
+if [[ ! "$OS" =~ ^(d11|d12|d13|u20|u22|u24)$ ]]; then
     echo "OS $OS not supported for build"
     exit 1
 fi
 # Other OS to check for building packages
 if [ -z "$OSes" ]; then
-    OSes="u24"
+    OSes="u24 d13"
 fi
 export OS OSes REPO COMPOSE_FILE DIR_TO_BE_BUILT
 
